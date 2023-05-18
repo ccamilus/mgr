@@ -2,5 +2,5 @@
 *.pyc
 __pycache__/
 venv/
-csv/
+csv_files/
 psq_files/
