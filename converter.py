@@ -1,14 +1,13 @@
+import csv
 import os
 from pathlib import Path
-
-import csv
 
 
 class Converter:
     def __init__(self, files_directories, default_board_size, time_snapshot):
         self._files_directories = files_directories
         self._default_board_size = default_board_size
-        self._output_path = Path(os.getcwd()).joinpath("csv").joinpath(time_snapshot)
+        self._output_path = Path(os.getcwd()).joinpath("csv_files").joinpath(time_snapshot)
         self._target_fields = []
 
     def run(self):

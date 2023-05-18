@@ -6,7 +6,7 @@ from pathlib import Path
 
 import converter
 
-FILES_DIRECTORIES = glob.glob(str(Path(os.getcwd()).joinpath("psq").joinpath("*.psq")))
+FILES_DIRECTORIES = glob.glob(str(Path(os.getcwd()).joinpath("psq_files").joinpath("*.psq")))
 DEFAULT_BOARD_SIZE = 15
 TIME_SNAPSHOT = datetime.now().strftime("%H%M%S.%f")
 
