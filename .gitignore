@@ -2,5 +2,4 @@
 *.pyc
 __pycache__/
 venv/
-csv_files/
-psq_files/
+data-processing/output/
