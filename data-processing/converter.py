@@ -25,8 +25,8 @@ class Converter:
         center = (self._default_board_size // 2) + oddity_bonus
         header_row = []
         for i in range(1, self._default_board_size ** 2 + 1):
-            header_row.append(f"0player_field_{i}")
-            header_row.append(f"1player_field_{i}")
+            header_row.append(f"0player_field{i}")
+            header_row.append(f"1player_field{i}")
         header_row.append(f"player_decision")
         for i in range(1, center + 1):
             for j in range(1, i + 1):
