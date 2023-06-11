@@ -1,22 +1,16 @@
 import csv
+import glob
 import os
+from datetime import datetime
 from pathlib import Path
 
 
 class Converter:
-    def __init__(self, files_directories, default_board_size, time_snapshot):
-        self._files_directories = files_directories
+    def __init__(self, psq_files_directories, default_board_size, time_snapshot):
+        self._psq_files_directories = psq_files_directories
         self._default_board_size = default_board_size
-        self._output_path = Path(os.path.dirname(os.path.abspath(__file__))).joinpath(f"output/{time_snapshot}/csv")
+        self._output_path = Path(os.path.dirname(os.path.abspath(__file__))).joinpath(f"csv/{time_snapshot}")
         self._target_fields = []
-
-    def run(self):
-        self._prepare_files()
-        for file_directory in self._files_directories:
-            moves = self._get_moves(file_directory)
-            if moves:
-                game = self._perform_symmetry(moves)
-                self._update_files(game)
 
     def _prepare_files(self):
         if not os.path.exists(self._output_path):
@@ -155,3 +149,23 @@ class Converter:
                 with open(self._output_path.joinpath(f"{field}.csv"), "a", newline="") as csv_file:
                     writer = csv.writer(csv_file)
                     writer.writerow(csv_row)
+
+    def run(self):
+        self._prepare_files()
+        for file_directory in self._psq_files_directories:
+            moves = self._get_moves(file_directory)
+            if moves:
+                game = self._perform_symmetry(moves)
+                self._update_files(game)
+
+
+def main():
+    psq_files_directories = glob.glob(str(Path(os.path.dirname(os.path.abspath(__file__))).joinpath("psq/*.psq")))
+    default_board_size = 15
+    time_snapshot = datetime.now().strftime("%H%M%S.%f")
+    conv = Converter(psq_files_directories, default_board_size, time_snapshot)
+    conv.run()
+
+
+if __name__ == "__main__":
+    main()

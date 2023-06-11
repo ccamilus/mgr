@@ -2,4 +2,6 @@
 *.pyc
 __pycache__/
 venv/
-data-processing/output/
+data-processing/psq/
+data-processing/csv/
+data-processing/cnf/
