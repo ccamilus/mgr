@@ -16,6 +16,7 @@ PLAYER1_COLOR = (23, 128, 63)
 DEFAULT_FONT = "assets/font/yoster.ttf"
 MENU_BUTTON = pygame.image.load("assets/menu_button.png")
 GAME_BUTTON = pygame.image.load("assets/game_button.png")
+ICON = pygame.image.load("assets/icon.png")
 
 
 class Button:
@@ -193,8 +194,7 @@ class Game:
         pygame.init()
         pygame.event.set_grab(True)
         pygame.display.set_caption("Gomoku")
-        self._icon = pygame.image.load("assets/icon.png")
-        pygame.display.set_icon(self._icon)
+        pygame.display.set_icon(ICON)
         self._board_size = board_size
         self._ai = AI(self._board_size)
         self._screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
