@@ -103,11 +103,11 @@ class Field:
 
     def update(self, player):
         if not self._corrupted:
-            self._corrupted = True
             text = "X" if player == 0 else "O"
             color = PLAYER0_COLOR if player == 0 else PLAYER1_COLOR
             self._text = self._font.render(text, True, color)
             self._text_rect = self._text.get_rect(center=(self._x + (self._size // 2), self._y + (self._size // 2)))
+            self._corrupted = True
 
     def set_won(self):
         self._won_field = True
@@ -193,6 +193,8 @@ class Game:
         pygame.init()
         pygame.event.set_grab(True)
         pygame.display.set_caption("Gomoku")
+        self._icon = pygame.image.load("assets/icon.png")
+        pygame.display.set_icon(self._icon)
         self._board_size = board_size
         self._ai = AI(self._board_size)
         self._screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -363,11 +365,14 @@ class Game:
                     if menu_button.check_for_input(mouse_coord[0], mouse_coord[1]):
                         self._main_menu()
                     if restart_button.check_for_input(mouse_coord[0], mouse_coord[1]):
-                        self._board = Board(self._board_size, self._screen)
-                        self._game_state = [0 for _ in range((self._board_size ** 2) * 2)]
-                        self._current_player = player
-                        self._information_message = "Your move" if self._current_player == "human" else "Computer's " \
-                                                                                                        "thinking"
+                        if not all(value == 0 for value in self._game_state):
+                            self._board = Board(self._board_size, self._screen)
+                            self._game_state = [0 for _ in range((self._board_size ** 2) * 2)]
+                            self._current_player = player
+                            if self._current_player == "human":
+                                self._information_message = "Your move"
+                            else:
+                                self._information_message = "Computer's thinking"
                     if self._current_player == "human" and not self._moving_thread_running:
                         field_not_corrupted, field_index = self._board.check_for_input(mouse_coord[0], mouse_coord[1])
                         if field_not_corrupted:
