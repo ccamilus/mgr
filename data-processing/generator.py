@@ -274,65 +274,22 @@ def main():
     time_snapshot = "174223.838237"
     default_board_size = 15
 
-    # Set of "zero" formulas
-    generator = Generator(
-        glob.glob(str(base_directory.joinpath(f"csv/{time_snapshot}/*.csv"))),
-        default_board_size,
-        time_snapshot)
+    # fields = [0, 106, 107, 108, 109, 110]  # ZERO-SET 0
+    # fields = [16, 17, 31, 32, 33, 46]  # ZERO-SET 1
+    # fields = [47, 48, 49, 61, 62, 63]  # ZERO-SET 2
+    # fields = [64, 65, 76, 77, 78, 79]  # ZERO-SET 3
+    # fields = [80, 81, 91, 92, 93, 94]  # ZERO-SET 4
+    fields = [95, 96, 97, 111, 112, 113]  # ZERO-SET 5
+
+    csv_files_directories = [glob.glob(str(base_directory.joinpath(f"csv/{time_snapshot}/{field}.csv")))[0] for field in
+                             fields]
+    generator = Generator(csv_files_directories, default_board_size, time_snapshot)
     formula_type = 0
     clause_types = [1, 2]
     number_of_literals = 3
     number_of_clauses = 25
     number_of_formulas = 100
     generator.run(formula_type, clause_types, number_of_literals, number_of_clauses, number_of_formulas)
-
-    # # Set of "one" formulas for fields 1, 106, 107, 108, 109, 110, 112, 17, 32, 33, 47, 48, 49, 61, 62, 63, 64, 76, 77,
-    # # 78, 91, 92, 93, 97, 65, 80, 79, 94
-    # fields = [1, 106, 107, 108, 109, 110, 112, 17, 32, 33, 47, 48, 49, 61, 62, 63, 64, 76, 77, 78, 91, 92, 93, 97, 65,
-    #           80, 79, 94]
-    # csv_files_directories = [glob.glob(str(base_directory.joinpath(f"csv/{time_snapshot}/{field}.csv"))) for field in
-    #                          fields]
-    # generator = Generator(csv_files_directories, default_board_size, time_snapshot)
-    # formula_type = 1
-    # clause_types = [0, 3, 4]
-    # number_of_literals = 3
-    # number_of_clauses = 25
-    # number_of_formulas = 100
-    # generator.run(formula_type, clause_types, number_of_literals, number_of_clauses, number_of_formulas)
-
-    # # Set of "one" formulas for fields 31, 46, 16
-    # fields = [31, 46, 16]
-    # csv_files_directories = [glob.glob(str(base_directory.joinpath(f"csv/{time_snapshot}/{field}.csv"))) for field in
-    #                          fields]
-    # generator = Generator(csv_files_directories, default_board_size, time_snapshot)
-    # formula_type = 1
-    # clause_types = [0, 3, 4]
-    # number_of_literals = 4
-    # number_of_clauses = 25
-    # number_of_formulas = 100
-    # generator.run(formula_type, clause_types, number_of_literals, number_of_clauses, number_of_formulas)
-
-    # # Set of "one" formulas for field 113
-    # csv_files_directories = [glob.glob(str(base_directory.joinpath(f"csv/{time_snapshot}/113.csv")))]
-    # generator = Generator(csv_files_directories, default_board_size, time_snapshot)
-    # formula_type = 1
-    # clause_types = [0, 3, 4]
-    # number_of_literals = 3
-    # number_of_clauses = 45
-    # number_of_formulas = 100
-    # generator.run(formula_type, clause_types, number_of_literals, number_of_clauses, number_of_formulas)
-
-    # # Set of "one" formulas for fields 81, 96, 111, 95
-    # fields = [81, 96, 111, 95]
-    # csv_files_directories = [glob.glob(str(base_directory.joinpath(f"csv/{time_snapshot}/{field}.csv"))) for field in
-    #                          fields]
-    # generator = Generator(csv_files_directories, default_board_size, time_snapshot)
-    # formula_type = 1
-    # clause_types = [1, 2, 3, 4]
-    # number_of_literals = 3
-    # number_of_clauses = 70
-    # number_of_formulas = 100
-    # generator.run(formula_type, clause_types, number_of_literals, number_of_clauses, number_of_formulas)
 
 
 if __name__ == "__main__":
