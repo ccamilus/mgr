@@ -39,8 +39,6 @@ class Field:
     def check_formulas(self, game_state):
         one_logic_values = [f.get_logic_value(game_state) for f in self._formulas_for_ones]
         zero_logic_values = [f.get_logic_value(game_state) for f in self._formulas_for_zeros]
-        # TODO: decide which return should be used
-        # return (sum(one_logic_values), sum(zero_logic_values)), self._index
         return sum(one_logic_values) - sum(zero_logic_values), self._index
 
 
@@ -119,6 +117,13 @@ class Cnf:
         return game_state_after_symmetry
 
     def get_results(self, game_state):
+        corrupted_fields = []
+        for index, value in enumerate(game_state):
+            if value == 1:
+                if index % 2 == 0:
+                    corrupted_fields.append((index // 2) + 1)
+                else:
+                    corrupted_fields.append(((index - 1) // 2) + 1)
         results_dictionary = {}
         symmetry_groups = [["t"], ["v"], ["h"], ["d1"], ["d2"], ["v", "d1"], ["h", "v"], ["h", "d1"]]
         for group in symmetry_groups:
@@ -135,6 +140,8 @@ class Cnf:
                 else:
                     if result[0] > results_dictionary[index]:
                         results_dictionary[index] = result[0]
+        for field in corrupted_fields:
+            del results_dictionary[field]
         results = [(value, key) for key, value in results_dictionary.items()]
         results.sort(reverse=True)
         return results

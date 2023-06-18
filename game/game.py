@@ -227,7 +227,8 @@ class Game:
 
     def _computer_move(self):
         self._moving_thread_running = True
-        field_index = self._ai.get_best_move(self._game_state)
+        computer_position_in_game_state = 0 if self._starting_player == "computer" else 1
+        field_index = self._ai.get_best_move(self._game_state, computer_position_in_game_state)
         game_state_index = (field_index - 1) * 2
         if self._starting_player == "human":
             game_state_index += 1
@@ -353,6 +354,9 @@ class Game:
             for button in [menu_button, restart_button]:
                 button.change_color(mouse_coord[0], mouse_coord[1])
                 button.update(self._screen)
+            if self._game_state.count(1) == self._board_size ** 2:
+                self._current_player = None
+                self._information_message = "Tie!"
             if self._current_player == "computer" and not self._moving_thread_running:
                 self._computer_move_thr()
             elif self._current_player == "human" and not self._moving_thread_running:
