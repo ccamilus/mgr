@@ -6,19 +6,19 @@ from pathlib import Path
 
 
 class Converter:
-    def __init__(self, psq_files_directories, default_board_size, time_snapshot):
+    def __init__(self, psq_files_directories, board_size, time_snapshot):
         self._psq_files_directories = psq_files_directories
-        self._default_board_size = default_board_size
+        self._board_size = board_size
         self._output_path = Path(os.path.dirname(os.path.abspath(__file__))).joinpath(f"csv/{time_snapshot}")
         self._target_fields = []
 
     def _prepare_files(self):
         if not os.path.exists(self._output_path):
             os.makedirs(self._output_path)
-        oddity_bonus = 0 if self._default_board_size % 2 == 0 else 1
-        center = (self._default_board_size // 2) + oddity_bonus
+        oddity_bonus = 0 if self._board_size % 2 == 0 else 1
+        center = (self._board_size // 2) + oddity_bonus
         header_row = []
-        for i in range(1, self._default_board_size ** 2 + 1):
+        for i in range(1, self._board_size ** 2 + 1):
             header_row.append(f"0player_field{i}")
             header_row.append(f"1player_field{i}")
         header_row.append(f"player_decision")
@@ -31,7 +31,7 @@ class Converter:
                     writer.writerow(header_row)
 
     def _transform_coordinate_to_index(self, x, y):
-        return (self._default_board_size * y) - (self._default_board_size - x)
+        return (self._board_size * y) - (self._board_size - x)
 
     def _get_moves(self, file_directory):
         moves = []
@@ -43,12 +43,12 @@ class Converter:
             except IndexError:
                 pass
             else:
-                if board_sizes[0] == board_sizes[1] and int(board_sizes[0]) == self._default_board_size:
+                if board_sizes[0] == board_sizes[1] and int(board_sizes[0]) == self._board_size:
                     for i in range(1, len(data)):
                         line = data[i].split(",")
                         if len(line) == 3 and all(_.isdigit() for _ in line):
-                            if 0 < int(line[0]) <= self._default_board_size and \
-                                    0 < int(line[1]) <= self._default_board_size:
+                            if 0 < int(line[0]) <= self._board_size and \
+                                    0 < int(line[1]) <= self._board_size:
                                 moves.append((int(line[0]), int(line[1])))
                             else:
                                 moves = None
@@ -76,9 +76,9 @@ class Converter:
         return game_after_symmetry
 
     def _get_classifiers(self, x, y):
-        board_center = self._default_board_size // 2
+        board_center = self._board_size // 2
         oddity_bonus = 0
-        if not self._default_board_size % 2 == 0:
+        if not self._board_size % 2 == 0:
             oddity_bonus = 1
             if y == board_center + oddity_bonus:
                 return "t" if x <= board_center + oddity_bonus else "v"
@@ -93,7 +93,7 @@ class Converter:
             else:
                 return "d1"
         if x > board_center + oddity_bonus and y <= board_center:
-            if y > self._default_board_size - x:
+            if y > self._board_size - x:
                 return "v"
             else:
                 return "v,d1"
@@ -103,7 +103,7 @@ class Converter:
             else:
                 return "h,v"
         if x <= board_center and y > board_center + oddity_bonus:
-            if y > self._default_board_size - x + 1:
+            if y > self._board_size - x + 1:
                 return "h,d1"
             else:
                 return "h"
@@ -111,13 +111,13 @@ class Converter:
     def _perform_coordinates_transformation(self, x, y, classifier):
         match classifier:
             case "v":
-                return self._default_board_size - x + 1, y
+                return self._board_size - x + 1, y
             case "h":
-                return x, self._default_board_size - y + 1
+                return x, self._board_size - y + 1
             case "d1":
                 return y, x
             case "d2":
-                return self._default_board_size - y + 1, self._default_board_size - x + 1
+                return self._board_size - y + 1, self._board_size - x + 1
             case "t":
                 return x, y
 
@@ -131,7 +131,7 @@ class Converter:
             game_ind.append((current_state.copy(), decision))
         for state in game_ind:
             row = []
-            for i in range(1, (self._default_board_size ** 2) + 1):
+            for i in range(1, (self._board_size ** 2) + 1):
                 if i in state[0]:
                     if state[0].index(i) % 2 == 0:
                         row.append(1)
@@ -161,9 +161,9 @@ class Converter:
 
 def main():
     psq_files_directories = glob.glob(str(Path(os.path.dirname(os.path.abspath(__file__))).joinpath("psq/*.psq")))
-    default_board_size = 15
+    board_size = 15
     time_snapshot = datetime.now().strftime("%H%M%S.%f")
-    conv = Converter(psq_files_directories, default_board_size, time_snapshot)
+    conv = Converter(psq_files_directories, board_size, time_snapshot)
     conv.run()
 
 

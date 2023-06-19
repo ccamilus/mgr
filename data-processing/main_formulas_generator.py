@@ -5,11 +5,11 @@ import random
 from pathlib import Path
 
 
-class Generator:
-    def __init__(self, csv_files_directories, default_board_size, time_snapshot):
+class MainGenerator:
+    def __init__(self, csv_files_directories, board_size, time_snapshot):
         self._csv_files_directories = csv_files_directories
-        self._default_board_size = default_board_size
-        self._goal_column = (default_board_size ** 2) * 2
+        self._board_size = board_size
+        self._goal_column = (board_size ** 2) * 2
         self._time_snapshot = time_snapshot
 
     def _get_data(self, file_directory):
@@ -31,10 +31,10 @@ class Generator:
         return ones, zeros, test_data
 
     def _transform_index_to_coordinate(self, index):
-        return ((index - 1) % self._default_board_size) + 1, math.ceil(index / self._default_board_size)
+        return ((index - 1) % self._board_size) + 1, math.ceil(index / self._board_size)
 
     def _transform_coordinate_to_index(self, x, y):
-        return (self._default_board_size * y) - (self._default_board_size - x)
+        return (self._board_size * y) - (self._board_size - x)
 
     def _create_clause_fields_around(self, target_field, depth_level):
         fields_around_target = []
@@ -43,12 +43,12 @@ class Generator:
         for i in range(0, (depth_level * 2) + 1):
             if i != 0:
                 y += 1
-            if 1 <= y <= self._default_board_size:
+            if 1 <= y <= self._board_size:
                 for j in range(0, (depth_level * 2) + 1):
                     x = target_x - depth_level
                     if j != 0:
                         x += j
-                    if 1 <= x <= self._default_board_size:
+                    if 1 <= x <= self._board_size:
                         if not (x == target_x and y == target_y):
                             fields_around_target.append(self._transform_coordinate_to_index(x, y))
         clause = []
@@ -124,30 +124,30 @@ class Generator:
         while next_level_available:
             if target_x - depth_level <= 0 and \
                     target_y - depth_level <= 0 and \
-                    target_x + depth_level > self._default_board_size and \
-                    target_y + depth_level > self._default_board_size:
+                    target_x + depth_level > self._board_size and \
+                    target_y + depth_level > self._board_size:
                 next_level_available = False
             else:
                 columns_in_level = []
-                if 1 <= target_y - depth_level <= self._default_board_size:
+                if 1 <= target_y - depth_level <= self._board_size:
                     for i in range(target_x - depth_level, target_x + depth_level + 1):
-                        if 1 <= i <= self._default_board_size:
+                        if 1 <= i <= self._board_size:
                             field = self._transform_coordinate_to_index(i, target_y - depth_level)
                             columns_in_level.append((field - 1) * 2)
                             columns_in_level.append(((field - 1) * 2) + 1)
-                if 1 <= target_y + depth_level <= self._default_board_size:
+                if 1 <= target_y + depth_level <= self._board_size:
                     for i in range(target_x - depth_level, target_x + depth_level + 1):
-                        if 1 <= i <= self._default_board_size:
+                        if 1 <= i <= self._board_size:
                             field = self._transform_coordinate_to_index(i, target_y + depth_level)
                             columns_in_level.append((field - 1) * 2)
                             columns_in_level.append(((field - 1) * 2) + 1)
                 for i in range((target_y - depth_level) + 1, target_y + depth_level):
-                    if 1 <= i <= self._default_board_size:
+                    if 1 <= i <= self._board_size:
                         if target_x - depth_level >= 1:
                             field = self._transform_coordinate_to_index(target_x - depth_level, i)
                             columns_in_level.append((field - 1) * 2)
                             columns_in_level.append(((field - 1) * 2) + 1)
-                        if target_x + depth_level <= self._default_board_size:
+                        if target_x + depth_level <= self._board_size:
                             field = self._transform_coordinate_to_index(target_x + depth_level, i)
                             columns_in_level.append((field - 1) * 2)
                             columns_in_level.append(((field - 1) * 2) + 1)
@@ -272,18 +272,12 @@ class Generator:
 def main():
     base_directory = Path(os.path.dirname(os.path.abspath(__file__)))
     time_snapshot = "174223.838237"
-    default_board_size = 15
+    board_size = 15
 
-    # fields = [0, 106, 107, 108, 109, 110]  # ZERO-SET 0
-    # fields = [16, 17, 31, 32, 33, 46]  # ZERO-SET 1
-    # fields = [47, 48, 49, 61, 62, 63]  # ZERO-SET 2
-    # fields = [64, 65, 76, 77, 78, 79]  # ZERO-SET 3
-    # fields = [80, 81, 91, 92, 93, 94]  # ZERO-SET 4
-    fields = [95, 96, 97, 111, 112, 113]  # ZERO-SET 5
-
+    fields = [78, 93]
     csv_files_directories = [glob.glob(str(base_directory.joinpath(f"csv/{time_snapshot}/{field}.csv")))[0] for field in
                              fields]
-    generator = Generator(csv_files_directories, default_board_size, time_snapshot)
+    generator = MainGenerator(csv_files_directories, board_size, time_snapshot)
     formula_type = 0
     clause_types = [1, 2]
     number_of_literals = 3
