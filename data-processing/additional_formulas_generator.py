@@ -14,22 +14,22 @@ class AdditionalGenerator:
     def _transform_coordinate_to_index(self, x, y):
         return (self._board_size * y) - (self._board_size - x)
 
-    def _win_checker(self, field):
+    def _fields_in_row_checker(self, field, number_of_fields):
         formulas = []
-        number_of_clauses = 5
-        formula_type = "win_checker"
+        number_of_clauses = number_of_fields + 1
+        formula_type = f"{number_of_fields}_checker"
         x, y = self._transform_index_to_coordinate(field)
-        hx = x - 4
-        for i in range(5):
+        hx = x - number_of_fields
+        for i in range(number_of_fields + 1):
             not_negated_indexes = []
             negated_indexes = []
-            first_negate_x = x - 5 + i
+            first_negate_x = x - (number_of_fields + 1) + i
             second_negate_x = x + 1 + i
             if 0 < first_negate_x <= self._board_size:
                 negated_indexes.append((self._transform_coordinate_to_index(first_negate_x, y) - 1) * 2)
             if 0 < second_negate_x <= self._board_size:
                 negated_indexes.append((self._transform_coordinate_to_index(second_negate_x, y) - 1) * 2)
-            for j in range(5):
+            for j in range(number_of_fields + 1):
                 tmp_hx = hx + i + j
                 if 0 < tmp_hx <= self._board_size:
                     if tmp_hx != x:
@@ -46,17 +46,17 @@ class AdditionalGenerator:
                     one_formula.append((True, negated_index + 1))
                     formulas.append(zero_formula)
                     formulas.append(one_formula)
-        vy = y - 4
-        for i in range(5):
+        vy = y - number_of_fields
+        for i in range(number_of_fields + 1):
             not_negated_indexes = []
             negated_indexes = []
-            first_negate_y = y - 5 + i
+            first_negate_y = y - (number_of_fields + 1) + i
             second_negate_y = y + 1 + i
             if 0 < first_negate_y <= self._board_size:
                 negated_indexes.append((self._transform_coordinate_to_index(x, first_negate_y) - 1) * 2)
             if 0 < second_negate_y <= self._board_size:
                 negated_indexes.append((self._transform_coordinate_to_index(x, second_negate_y) - 1) * 2)
-            for j in range(5):
+            for j in range(number_of_fields + 1):
                 tmp_vy = vy + i + j
                 if 0 < tmp_vy <= self._board_size:
                     if tmp_vy != y:
@@ -73,13 +73,13 @@ class AdditionalGenerator:
                     one_formula.append((True, negated_index + 1))
                     formulas.append(zero_formula)
                     formulas.append(one_formula)
-        d1x = x - 4
-        d1y = y - 4
-        for i in range(5):
+        d1x = x - number_of_fields
+        d1y = y - number_of_fields
+        for i in range(number_of_fields + 1):
             not_negated_indexes = []
             negated_indexes = []
-            first_negate_x = x - 5 + i
-            first_negate_y = y - 5 + i
+            first_negate_x = x - (number_of_fields + 1) + i
+            first_negate_y = y - (number_of_fields + 1) + i
             second_negate_x = x + 1 + i
             second_negate_y = y + 1 + i
             if 0 < first_negate_x <= self._board_size and 0 < first_negate_y <= self._board_size:
@@ -89,7 +89,7 @@ class AdditionalGenerator:
             if second_negate_x == self._board_size + 1 and first_negate_y == 0 or \
                     second_negate_y == self._board_size + 1 and first_negate_x == 0:
                 negated_indexes.append((self._transform_coordinate_to_index(x, y) - 1) * 2)
-            for j in range(5):
+            for j in range(number_of_fields + 1):
                 tmp_d1x = d1x + i + j
                 tmp_d1y = d1y + i + j
                 if 0 < tmp_d1x <= self._board_size and 0 < tmp_d1y <= self._board_size:
@@ -107,13 +107,13 @@ class AdditionalGenerator:
                     one_formula.append((True, negated_index + 1))
                     formulas.append(zero_formula)
                     formulas.append(one_formula)
-        d2x = x + 4
-        d2y = y - 4
-        for i in range(5):
+        d2x = x + number_of_fields
+        d2y = y - number_of_fields
+        for i in range(number_of_fields + 1):
             not_negated_indexes = []
             negated_indexes = []
-            first_negate_x = x + 5 - i
-            first_negate_y = y - 5 + i
+            first_negate_x = x + (number_of_fields + 1) - i
+            first_negate_y = y - (number_of_fields + 1) + i
             second_negate_x = x - 1 - i
             second_negate_y = y + 1 + i
             if 0 < first_negate_x <= self._board_size and 0 < first_negate_y <= self._board_size:
@@ -125,7 +125,7 @@ class AdditionalGenerator:
             if second_negate_x == 0 and first_negate_y == 0 or \
                     second_negate_y == self._board_size + 1 and first_negate_x == self._board_size + 1:
                 negated_indexes.append((self._transform_coordinate_to_index(x, y) - 1) * 2)
-            for j in range(5):
+            for j in range(number_of_fields + 1):
                 tmp_d2x = d2x - i - j
                 tmp_d2y = d2y + i + j
                 if 0 < tmp_d2x <= self._board_size and 0 < tmp_d2y <= self._board_size:
@@ -160,12 +160,11 @@ class AdditionalGenerator:
                     cnf.write("\n")
 
     def run(self):
-        field = 1
-        self._win_checker(field)
         for field in range(1, (self._board_size ** 2) + 1):
-            win_checker_results = self._win_checker(field)
-            self._save_formulas_as_cnf_file(win_checker_results[0], field, win_checker_results[1],
-                                            win_checker_results[2], win_checker_results[3])
+            for number_of_fields in [3, 4]:
+                checker_results = self._fields_in_row_checker(field, number_of_fields)
+                self._save_formulas_as_cnf_file(checker_results[0], field, checker_results[1],
+                                                checker_results[2], checker_results[3])
 
 
 def main():

@@ -8,7 +8,6 @@ import pygame
 
 from ai import AI
 
-BASE_PATH = Path(os.path.dirname(os.path.abspath(__file__)))
 SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 549
 NAVY_BLUE_COLOR = (30, 47, 74)
@@ -16,6 +15,7 @@ GOLD_COLOR = (204, 152, 8)
 ALMOST_WHITE_COLOR = (245, 245, 245)
 PLAYER0_COLOR = (168, 62, 50)
 PLAYER1_COLOR = (23, 128, 63)
+BASE_PATH = Path(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_FONT = BASE_PATH.joinpath("assets/font/yoster.ttf")
 MENU_BUTTON = pygame.image.load(BASE_PATH.joinpath("assets/menu_button.png"))
 GAME_BUTTON = pygame.image.load(BASE_PATH.joinpath("assets/game_button.png"))
