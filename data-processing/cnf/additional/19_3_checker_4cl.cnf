@@ -1,0 +1,22 @@
+c 19_3_checker_4cl.cnf
+c
+c field = 19
+c formula set type = 3_checker_4cl
+c
+p cnf 4 4
+8 
+64 
+92 
+-121 
+9 
+65 
+93 
+-120 
+64 
+92 
+120 
+-9 
+65 
+93 
+121 
+-8 

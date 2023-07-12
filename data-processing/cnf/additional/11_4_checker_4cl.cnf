@@ -1,0 +1,14 @@
+c 11_4_checker_4cl.cnf
+c
+c field = 11
+c formula set type = 4_checker_4cl
+c
+p cnf 4 2
+52 
+84 
+116 
+148 
+53 
+85 
+117 
+149 

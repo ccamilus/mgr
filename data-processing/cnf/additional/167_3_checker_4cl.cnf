@@ -1,0 +1,22 @@
+c 167_3_checker_4cl.cnf
+c
+c field = 167
+c formula set type = 3_checker_4cl
+c
+p cnf 4 4
+300 
+364 
+396 
+-429 
+301 
+365 
+397 
+-428 
+364 
+396 
+428 
+-301 
+365 
+397 
+429 
+-300 

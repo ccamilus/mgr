@@ -1,0 +1,22 @@
+c 193_3_checker_4cl.cnf
+c
+c field = 193
+c formula set type = 3_checker_4cl
+c
+p cnf 4 4
+328 
+356 
+412 
+-441 
+329 
+357 
+413 
+-440 
+356 
+412 
+440 
+-329 
+357 
+413 
+441 
+-328 

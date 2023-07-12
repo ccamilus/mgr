@@ -1,0 +1,30 @@
+c 3_4_checker_6cl.cnf
+c
+c field = 3
+c formula set type = 4_checker_6cl
+c
+p cnf 6 4
+2 
+6 
+8 
+10 
+-0 
+-12 
+3 
+7 
+9 
+11 
+-1 
+-13 
+6 
+8 
+10 
+12 
+-2 
+-14 
+7 
+9 
+11 
+13 
+-3 
+-15 

@@ -1,0 +1,7 @@
+c 153_nearby_field_checker.cnf
+c
+c field = 153
+c formula set type = nearby_field_checker
+c
+p cnf 1 1
+272 273 274 275 276 277 302 303 306 307 332 333 334 335 336 337 

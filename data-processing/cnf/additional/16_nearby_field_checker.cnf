@@ -1,0 +1,7 @@
+c 16_nearby_field_checker.cnf
+c
+c field = 16
+c formula set type = nearby_field_checker
+c
+p cnf 1 1
+0 1 2 3 32 33 60 61 62 63 

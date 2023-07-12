@@ -1,0 +1,7 @@
+c 7_nearby_field_checker.cnf
+c
+c field = 7
+c formula set type = nearby_field_checker
+c
+p cnf 1 1
+10 11 14 15 40 41 42 43 44 45 
