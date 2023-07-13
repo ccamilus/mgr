@@ -630,7 +630,3 @@ class AdditionalGenerator:
             self._four_in_line_checker(field, board_size, output_path)
             self._three_in_line_checker(field, board_size, output_path)
             self._nearby_field_checker(field, board_size, output_path)
-
-
-if __name__ == "__main__":
-    AdditionalGenerator().generate(15, Path(os.path.dirname(os.path.abspath(__file__))).joinpath("addi"))
