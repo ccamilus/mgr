@@ -1,0 +1,14 @@
+c 43_4_checker_4cl.cnf
+c
+c field = 43
+c formula set type = 4_checker_4cl
+c
+p cnf 4 2
+20 
+52 
+116 
+148 
+21 
+53 
+117 
+149 

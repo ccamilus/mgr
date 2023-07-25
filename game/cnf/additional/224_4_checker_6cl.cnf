@@ -1,0 +1,18 @@
+c 224_4_checker_6cl.cnf
+c
+c field = 224
+c formula set type = 4_checker_6cl
+c
+p cnf 6 2
+438 
+440 
+442 
+444 
+-436 
+-448 
+439 
+441 
+443 
+445 
+-437 
+-449 

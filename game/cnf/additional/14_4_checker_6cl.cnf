@@ -1,0 +1,18 @@
+c 14_4_checker_6cl.cnf
+c
+c field = 14
+c formula set type = 4_checker_6cl
+c
+p cnf 6 2
+18 
+20 
+22 
+24 
+-16 
+-28 
+19 
+21 
+23 
+25 
+-17 
+-29 

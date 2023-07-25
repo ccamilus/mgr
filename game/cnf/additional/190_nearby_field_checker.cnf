@@ -1,0 +1,7 @@
+c 190_nearby_field_checker.cnf
+c
+c field = 190
+c formula set type = nearby_field_checker
+c
+p cnf 1 1
+346 347 348 349 350 351 376 377 380 381 406 407 408 409 410 411 

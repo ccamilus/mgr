@@ -1,0 +1,14 @@
+c 215_4_checker_4cl.cnf
+c
+c field = 215
+c formula set type = 4_checker_4cl
+c
+p cnf 4 2
+300 
+332 
+364 
+396 
+301 
+333 
+365 
+397 

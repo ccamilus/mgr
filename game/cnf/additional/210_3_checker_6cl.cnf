@@ -1,0 +1,18 @@
+c 210_3_checker_6cl.cnf
+c
+c field = 210
+c formula set type = 3_checker_6cl
+c
+p cnf 6 2
+328 
+358 
+388 
+-299 
+-268 
+-448 
+329 
+359 
+389 
+-298 
+-269 
+-449 

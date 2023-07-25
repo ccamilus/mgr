@@ -1,3 +1,4 @@
+import copy
 import os
 import random
 from pathlib import Path
@@ -225,8 +226,8 @@ class MainGenerator:
                             one_formulas.append(formula)
                             self._print_results(number_of_generated_files, len(self._csv_files_directories), field,
                                                 len(one_formulas), number_of_formulas)
-                u.save_formulas_as_cnf_file(one_formulas, field, output_path, formula_type, number_of_clauses,
-                                            number_of_formulas)
+                _save_formulas_as_cnf_file(one_formulas, field, output_path, formula_type, number_of_clauses,
+                                           number_of_formulas)
                 number_of_generated_files += 1
             if formula_type == 0:
                 zero_formulas = []
@@ -242,8 +243,8 @@ class MainGenerator:
                             zero_formulas.append(formula)
                             self._print_results(number_of_generated_files, len(self._csv_files_directories), field,
                                                 len(zero_formulas), number_of_formulas)
-                u.save_formulas_as_cnf_file(zero_formulas, field, output_path, formula_type, number_of_clauses,
-                                            number_of_formulas)
+                _save_formulas_as_cnf_file(zero_formulas, field, output_path, formula_type, number_of_clauses,
+                                           number_of_formulas)
                 number_of_generated_files += 1
 
 
@@ -376,7 +377,7 @@ class AdditionalGenerator:
                 formula_dict[number_of_clauses] = []
             formula_dict[number_of_clauses].append(formula)
         for key, value in formula_dict.items():
-            u.save_formulas_as_cnf_file(value, field, output_path, f"4_checker_{key}cl", key, len(value))
+            _save_formulas_as_cnf_file(value, field, output_path, f"4_checker_{key}cl", key, len(value))
 
     def _three_in_line_checker(self, field, board_size, output_path):
         formulas = []
@@ -601,7 +602,7 @@ class AdditionalGenerator:
                 formula_dict[number_of_clauses] = []
             formula_dict[number_of_clauses].append(formula)
         for key, value in formula_dict.items():
-            u.save_formulas_as_cnf_file(value, field, output_path, f"3_checker_{key}cl", key, len(value))
+            _save_formulas_as_cnf_file(value, field, output_path, f"3_checker_{key}cl", key, len(value))
 
     def _nearby_field_checker(self, field, board_size, output_path):
         nearby_fields_indexes = []
@@ -623,10 +624,146 @@ class AdditionalGenerator:
         for nearby_field_index in nearby_fields_indexes:
             clause.append((False, nearby_field_index))
             clause.append((False, nearby_field_index + 1))
-        u.save_formulas_as_cnf_file([[clause]], field, output_path, "nearby_field_checker", 1, 1)
+        _save_formulas_as_cnf_file([[clause]], field, output_path, "nearby_field_checker", 1, 1)
 
     def generate(self, board_size, output_path):
         for field in range(1, (board_size ** 2) + 1):
             self._four_in_line_checker(field, board_size, output_path)
             self._three_in_line_checker(field, board_size, output_path)
             self._nearby_field_checker(field, board_size, output_path)
+
+
+def _save_formulas_as_cnf_file(formulas, field, output_path, formula_type, number_of_clauses, number_of_formulas):
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    with open(Path(output_path).joinpath(f"{field}_{formula_type}.cnf"), "w") as cnf_file:
+        cnf_file.write(f"c {field}_{formula_type}.cnf\nc\n")
+        cnf_file.write(f"c field = {field}\nc formula set type = {formula_type}\nc\n")
+        cnf_file.write(f"p cnf {number_of_clauses} {number_of_formulas}\n")
+        for formula in formulas:
+            for clause in formula:
+                for literal in clause:
+                    cnf_file.write(f"-{literal[1]} ") if literal[0] else cnf_file.write(f"{literal[1]} ")
+                cnf_file.write("\n")
+
+
+def _get_classifiers(field_index, board_size):
+    x, y = u.transform_index_to_coordinate(field_index, board_size)
+    board_center = board_size // 2
+    oddity_bonus = 0
+    if not board_size % 2 == 0:
+        oddity_bonus = 1
+        if y == board_center + oddity_bonus:
+            return ["t"] if x <= board_center + oddity_bonus else ["v"]
+        if x == board_center + oddity_bonus:
+            if y < board_center + oddity_bonus:
+                return ["d1"]
+            elif y > board_center + oddity_bonus:
+                return ["d2"]
+    if x <= board_center and y <= board_center:
+        if y >= x:
+            return ["t"]
+        else:
+            return ["d1"]
+    if x > board_center + oddity_bonus and y <= board_center:
+        if y > board_size - x:
+            return ["v"]
+        else:
+            return ["v", "d1"]
+    if x > board_center + oddity_bonus and y > board_center + oddity_bonus:
+        if y >= x:
+            return ["d2"]
+        else:
+            return ["h", "v"]
+    if x <= board_center and y > board_center + oddity_bonus:
+        if y > board_size - x + 1:
+            return ["h", "d1"]
+        else:
+            return ["h"]
+
+
+def _perform_symmetry_on_field(index, board_size, classifier):
+    x, y = u.transform_index_to_coordinate(index, board_size)
+    match classifier:
+        case "t":
+            return index
+        case "v":
+            return u.transform_coordinate_to_index(board_size - x + 1, y, board_size)
+        case "h":
+            return u.transform_coordinate_to_index(x, board_size - y + 1, board_size)
+        case "d1":
+            return u.transform_coordinate_to_index(y, x, board_size)
+        case "d2":
+            return u.transform_coordinate_to_index(board_size - y + 1, board_size - x + 1, board_size)
+
+
+def _perform_symmetry_on_clauses(clauses, board_size, classifier):
+    new_clauses = []
+    for clause in clauses:
+        game_state_properties = []
+        for game_state_property in clause:
+            game_state_properties.append((game_state_property[0],
+                                          game_state_property[1],
+                                          _perform_symmetry_on_field(game_state_property[2], board_size,
+                                                                     classifier)))
+        new_clauses.append(game_state_properties)
+    return new_clauses
+
+
+def _get_clauses_as_tuples(file_lines):
+    clauses = []
+    for line in file_lines:
+        game_state_properties = []
+        raw_column_indexes = line.split()
+        for raw_column_index in raw_column_indexes:
+            if raw_column_index.startswith('-'):
+                column_index = int(raw_column_index[1:])
+                player = 0 if column_index % 2 == 0 else 1
+                field_index = ((column_index - player) // 2) + 1
+                game_state_properties.append((True, player, field_index))
+            else:
+                column_index = int(raw_column_index)
+                player = 0 if column_index % 2 == 0 else 1
+                field_index = ((column_index - player) // 2) + 1
+                game_state_properties.append((False, player, field_index))
+        clauses.append(game_state_properties)
+    return clauses
+
+
+def generate_rest_main_formulas_from_symmetry_fields(board_size, formula_type):
+    symmetry_fields_indexes = []
+    oddity_bonus = 0 if board_size % 2 == 0 else 1
+    center = (board_size // 2) + oddity_bonus
+    for i in range(1, center + 1):
+        for j in range(1, i + 1):
+            symmetry_fields_indexes.append((board_size * i) - (board_size - j))
+    rest_fields_indexes = [index + 1 for index in range(board_size ** 2) if index + 1 not in symmetry_fields_indexes]
+
+    for field_index in rest_fields_indexes:
+        classifiers = _get_classifiers(field_index, board_size)
+        target_field = field_index
+        for classifier in classifiers:
+            target_field = _perform_symmetry_on_field(target_field, board_size, classifier)
+        classifiers.reverse()
+        with open(Path(os.path.dirname(os.path.abspath(__file__))).joinpath(
+                f"cnf/main/{target_field}_{formula_type}.cnf"), "r") as cnf_file:
+            content = [line.strip() for line in cnf_file if not line.startswith('c')]
+            parameters = content[0]
+            clauses = _get_clauses_as_tuples(content[1:])
+        new_clauses = copy.deepcopy(clauses)
+        for classifier in classifiers:
+            new_clauses = _perform_symmetry_on_clauses(new_clauses, board_size, classifier)
+        with open(
+                Path(os.path.dirname(os.path.abspath(__file__))).joinpath(f"cnf/main/{field_index}_{formula_type}.cnf"),
+                "w") as cnf_file:
+            cnf_file.write(f"c {field_index}_{formula_type}.cnf\nc\n")
+            cnf_file.write(f"c field = {field_index}\nc formula set type = {formula_type}\nc\n")
+            cnf_file.write(f"{parameters}\n")
+            for clause in new_clauses:
+                for game_state_property in clause:
+                    column_index = ((game_state_property[2] - 1) * 2) + game_state_property[1]
+                    if game_state_property[0]:
+                        cnf_file.write(f"-{column_index} ")
+                    else:
+                        cnf_file.write(f"{column_index} ")
+                cnf_file.write("\n")
