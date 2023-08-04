@@ -8,7 +8,7 @@ BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 BOARD_SIZE = 15
 
 
-class CsvShifter:
+class CsvFieldShifter:
     @staticmethod
     def shift(base_field, target_field):
         shifted_rows = []
@@ -50,9 +50,9 @@ class CsvShifter:
 
 
 def main():
-    CsvShifter.shift(64, 80)
-    CsvShifter.shift(109, 95)
-    CsvShifter.shift(110, 96)
+    CsvFieldShifter.shift(64, 80)
+    CsvFieldShifter.shift(109, 95)
+    CsvFieldShifter.shift(110, 96)
 
 
 if __name__ == "__main__":
