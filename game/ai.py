@@ -8,11 +8,14 @@ from numba import njit
 from numba.typed import List, Dict
 from numpy import array, int16, uint8
 
+BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
+
 
 class AI:
     def __init__(self, board_size):
         self._board_size = board_size
         self._main_formulas_dict = self._prepare_main_formulas()
+        self._evaluation_formulas_dict = self._prepare_evaluation_formulas()
         self._four_checker_formulas_dict = self._prepare_additional_formulas("4_checker")
         self._three_checker_formulas_dict = self._prepare_additional_formulas("3_checker")
         self._nearby_field_checker_formulas_dict = self._prepare_additional_formulas("nearby_field_checker")
@@ -31,21 +34,30 @@ class AI:
         fields = [index + 1 for index in range(self._board_size ** 2)]
         main_formulas_dict = Dict()
         for f in fields:
-            with open(Path(os.path.dirname(os.path.abspath(__file__))).joinpath(f"cnf/main/{f}_0.cnf"), "r") as file:
+            with open(BASE_DIR.joinpath(f"cnf/main/{f}_0.cnf"), "r") as file:
                 all_data = [line.strip() for line in file if not line.startswith('c')]
                 zeros = List(self._create_formulas(all_data[0].split()[2], all_data[1:]))
-            with open(Path(os.path.dirname(os.path.abspath(__file__))).joinpath(f"cnf/main/{f}_1.cnf"), "r") as file:
+            with open(BASE_DIR.joinpath(f"cnf/main/{f}_1.cnf"), "r") as file:
                 all_data = [line.strip() for line in file if not line.startswith('c')]
                 ones = List(self._create_formulas(all_data[0].split()[2], all_data[1:]))
             main_formulas_dict[f] = zeros, ones
         return main_formulas_dict
 
+    def _prepare_evaluation_formulas(self):
+        evaluation_formulas_dict = Dict()
+        with open(BASE_DIR.joinpath("cnf/evaluation/evaluation_player_0.cnf"), "r") as file:
+            all_data = [line.strip() for line in file if not line.startswith('c')]
+            evaluation_formulas_dict[0] = List(self._create_formulas(all_data[0].split()[2], all_data[1:]))
+        with open(BASE_DIR.joinpath("cnf/evaluation/evaluation_player_1.cnf"), "r") as file:
+            all_data = [line.strip() for line in file if not line.startswith('c')]
+            evaluation_formulas_dict[1] = List(self._create_formulas(all_data[0].split()[2], all_data[1:]))
+        return evaluation_formulas_dict
+
     def _prepare_additional_formulas(self, formula_type):
         fields = [index + 1 for index in range(self._board_size ** 2)]
         additional_formulas_dict = Dict()
         for f in fields:
-            files = glob.glob(str(Path(os.path.dirname(os.path.abspath(__file__))).joinpath(
-                f"cnf/additional/{f}_{formula_type}*.cnf")))
+            files = glob.glob(str(BASE_DIR.joinpath(f"cnf/additional/{f}_{formula_type}*.cnf")))
             formulas = []
             for file in files:
                 with open(file, "r") as cnf_file:
@@ -70,8 +82,8 @@ class AI:
                 game_state[((field - 1) * 2) + computer_position_in_game_state] = 1
                 score = minmax(self._four_checker_formulas_dict, self._three_checker_formulas_dict,
                                self._nearby_field_checker_formulas_dict, self._main_formulas_dict,
-                               array(game_state, dtype=int16), computer_position_in_game_state, 4, self._board_size,
-                               False)
+                               self._evaluation_formulas_dict, array(game_state, dtype=int16),
+                               computer_position_in_game_state, 6, self._board_size, False)
                 game_state[((field - 1) * 2) + computer_position_in_game_state] = 0
                 if score == 1:
                     return field
@@ -83,8 +95,9 @@ class AI:
 
 @njit(nogil=True)
 def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field_checker_formulas_dict,
-           main_formulas_dict, game_state, computer_position_in_game_state, depth, board_size, maximizer):
-    score = get_score(game_state, board_size, computer_position_in_game_state)
+           main_formulas_dict, evaluation_formulas_dict, game_state, computer_position_in_game_state, depth, board_size,
+           maximizer):
+    score = get_score(evaluation_formulas_dict, game_state, board_size, computer_position_in_game_state)
     if depth == 1 or score == 1 or score == -1 or sum(game_state) == (board_size ** 2):
         return score
     if maximizer:
@@ -95,8 +108,8 @@ def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field
         for field in fields:
             game_state[((field - 1) * 2) + bonus] = 1
             minmax_result = minmax(four_checker_formulas_dict, three_checker_formulas_dict,
-                                   nearby_field_checker_formulas_dict, main_formulas_dict, game_state,
-                                   computer_position_in_game_state, depth - 1, board_size, False)
+                                   nearby_field_checker_formulas_dict, main_formulas_dict, evaluation_formulas_dict,
+                                   game_state, computer_position_in_game_state, depth - 1, board_size, False)
             game_state[((field - 1) * 2) + bonus] = 0
             if minmax_result == 1:
                 return minmax_result
@@ -110,8 +123,8 @@ def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field
         for field in fields:
             game_state[((field - 1) * 2) + bonus] = 1
             minmax_result = minmax(four_checker_formulas_dict, three_checker_formulas_dict,
-                                   nearby_field_checker_formulas_dict, main_formulas_dict, game_state,
-                                   computer_position_in_game_state, depth - 1, board_size, True)
+                                   nearby_field_checker_formulas_dict, main_formulas_dict, evaluation_formulas_dict,
+                                   game_state, computer_position_in_game_state, depth - 1, board_size, True)
             game_state[((field - 1) * 2) + bonus] = 0
             if minmax_result == -1:
                 return minmax_result
@@ -216,7 +229,59 @@ def check_main_formulas(main_formulas_dict, non_corrupted_fields, game_state):
 
 
 @njit(nogil=True)
-def get_score(game_state, board_size, computer_position_in_game_state):
+def check_evaluation_formulas(evaluation_formulas_dict, game_state, computer_position_in_game_state):
+    player_0_score = 0
+    for formula in evaluation_formulas_dict[0]:
+        formula_logic_value = True
+        for clause in formula:
+            clause_logic_value = False
+            for literal in clause:
+                if literal < 0:
+                    if not bool(game_state[literal * -1]):
+                        clause_logic_value = True
+                        break
+                else:
+                    if bool(game_state[literal]):
+                        clause_logic_value = True
+                        break
+            if not clause_logic_value:
+                formula_logic_value = False
+                break
+        if formula_logic_value:
+            player_0_score += 1
+    player_1_score = 0
+    for formula in evaluation_formulas_dict[1]:
+        formula_logic_value = True
+        for clause in formula:
+            clause_logic_value = False
+            for literal in clause:
+                if literal < 0:
+                    if not bool(game_state[literal * -1]):
+                        clause_logic_value = True
+                        break
+                else:
+                    if bool(game_state[literal]):
+                        clause_logic_value = True
+                        break
+            if not clause_logic_value:
+                formula_logic_value = False
+                break
+        if formula_logic_value:
+            player_1_score += 1
+    if player_1_score > player_0_score:
+        result = ((player_1_score - player_0_score) / 100) if computer_position_in_game_state == 1 \
+            else ((player_1_score - player_0_score) / 100) * -1
+        return result
+    elif player_0_score > player_1_score:
+        result = ((player_0_score - player_1_score) / 100) if computer_position_in_game_state == 0 \
+            else ((player_0_score - player_1_score) / 100) * -1
+        return result
+    elif player_1_score == player_0_score:
+        return 0
+
+
+@njit(nogil=True)
+def get_score(evaluation_formulas_dict, game_state, board_size, computer_position_in_game_state):
     corrupted_fields_by_computer = []
     corrupted_fields_by_human = []
     human_position_in_game_state = 0 if computer_position_in_game_state == 1 else 1
@@ -227,7 +292,7 @@ def get_score(game_state, board_size, computer_position_in_game_state):
         if value == 1:
             corrupted_fields_by_human.append(transform_index_to_coordinate(index + 1, board_size))
     if len(corrupted_fields_by_computer) < 5 and len(corrupted_fields_by_human) < 5:
-        return 0
+        return check_evaluation_formulas(evaluation_formulas_dict, game_state, computer_position_in_game_state)
     for index, corrupted_fields in enumerate([corrupted_fields_by_computer, corrupted_fields_by_human]):
         for y in range(1, board_size + 1):
             fields = [corrupted_field for corrupted_field in corrupted_fields if corrupted_field[1] == y]
@@ -263,7 +328,7 @@ def get_score(game_state, board_size, computer_position_in_game_state):
                 wanted_fields = [(field[0] - i, field[1] + i) for i in range(1, 5)]
                 if check_elements_membership(wanted_fields, corrupted_fields, True):
                     return 1 if index == 0 else -1
-    return 0
+    return check_evaluation_formulas(evaluation_formulas_dict, game_state, computer_position_in_game_state)
 
 
 @njit(nogil=True)
