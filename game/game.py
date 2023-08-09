@@ -2,6 +2,7 @@ import math
 import os
 import sys
 import threading
+import time
 from pathlib import Path
 
 import pygame
@@ -78,6 +79,7 @@ class Field:
         self._text = None
         self._text_rect = None
         self._won_field = False
+        self.last_move = False
 
     def draw(self, hovering=False):
         label = pygame.Rect(self._x, self._y, self._size, self._size)
@@ -90,6 +92,9 @@ class Field:
                 won_label = pygame.Rect(self._x + 1, self._y + 1, self._size - 2, self._size - 2)
                 pygame.draw.rect(self._screen, GOLD_COLOR, won_label)
             if self._corrupted:
+                if self.last_move:
+                    last_move_label = pygame.Rect(self._x + 1, self._y + 1, self._size - 2, self._size - 2)
+                    pygame.draw.rect(self._screen, GOLD_COLOR, last_move_label, 2)
                 self._screen.blit(self._text, self._text_rect)
 
     def change_color(self, x, y):
@@ -173,10 +178,11 @@ class Board:
         for field in self._fields:
             field.change_color(x, y)
 
-    def update_fields(self, game_state):
+    def update_fields(self, game_state, field_index):
         corrupted_fields = self._get_corrupted_fields_from_game_state(game_state)
         for field in self._fields:
             if field.index in corrupted_fields:
+                field.last_move = True if field.index == field_index else False
                 field.update(corrupted_fields[field.index])
 
     def check_for_input(self, x, y):
@@ -218,7 +224,7 @@ class Game:
         if self._starting_player == "computer":
             game_state_index += 1
         self._game_state[game_state_index] = 1
-        self._board.update_fields(self._game_state)
+        self._board.update_fields(self._game_state, field_index)
         player_won, line_fields = self._check_if_player_won(self._game_state, "human")
         if player_won:
             self._board.set_won_line(line_fields)
@@ -236,7 +242,7 @@ class Game:
         if self._starting_player == "human":
             game_state_index += 1
         self._game_state[game_state_index] = 1
-        self._board.update_fields(self._game_state)
+        self._board.update_fields(self._game_state, field_index)
         player_won, line_fields = self._check_if_player_won(self._game_state, "computer")
         if player_won:
             self._board.set_won_line(line_fields)
