@@ -66,7 +66,7 @@ class AI:
             additional_formulas_dict[f] = List(formulas)
         return additional_formulas_dict
 
-    def get_best_move(self, game_state, computer_position_in_game_state):
+    def get_best_move(self, game_state, computer_position_in_game_state, player_options_tuple):
         non_corrupted_fields = [i for i in range(1, (self._board_size ** 2) + 1) if
                                 not game_state[(i - 1) * 2] == 1 and not game_state[((i - 1) * 2) + 1] == 1]
         if sum(game_state) == 0:
@@ -77,13 +77,15 @@ class AI:
             field_scores = []
             fields = prepare_fields(self._four_checker_formulas_dict, self._three_checker_formulas_dict,
                                     self._nearby_field_checker_formulas_dict, self._main_formulas_dict,
-                                    self._board_size, array(game_state, dtype=int16))
+                                    self._board_size, array(game_state, dtype=int16), player_options_tuple[3],
+                                    player_options_tuple[1])
             for field in fields:
                 game_state[((field - 1) * 2) + computer_position_in_game_state] = 1
                 score = minmax(self._four_checker_formulas_dict, self._three_checker_formulas_dict,
                                self._nearby_field_checker_formulas_dict, self._main_formulas_dict,
                                self._evaluation_formulas_dict, array(game_state, dtype=int16),
-                               computer_position_in_game_state, 6, self._board_size, False)
+                               computer_position_in_game_state, player_options_tuple[4], self._board_size, False,
+                               player_options_tuple[3], player_options_tuple[2], player_options_tuple[1])
                 game_state[((field - 1) * 2) + computer_position_in_game_state] = 0
                 if score == 1:
                     return field
@@ -96,20 +98,23 @@ class AI:
 @njit(nogil=True)
 def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field_checker_formulas_dict,
            main_formulas_dict, evaluation_formulas_dict, game_state, computer_position_in_game_state, depth, board_size,
-           maximizer):
-    score = get_score(evaluation_formulas_dict, game_state, board_size, computer_position_in_game_state)
+           maximizer, minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value):
+    score = get_score(evaluation_formulas_dict, game_state, board_size, computer_position_in_game_state,
+                      evaluation_function_option_value)
     if depth == 1 or score == 1 or score == -1 or sum(game_state) == (board_size ** 2):
         return score
     if maximizer:
         best_score = -2
         bonus = 0 + computer_position_in_game_state
         fields = prepare_fields(four_checker_formulas_dict, three_checker_formulas_dict,
-                                nearby_field_checker_formulas_dict, main_formulas_dict, board_size, game_state)
+                                nearby_field_checker_formulas_dict, main_formulas_dict, board_size, game_state,
+                                minmax_number_of_fields_value, minmax_option_value)
         for field in fields:
             game_state[((field - 1) * 2) + bonus] = 1
             minmax_result = minmax(four_checker_formulas_dict, three_checker_formulas_dict,
                                    nearby_field_checker_formulas_dict, main_formulas_dict, evaluation_formulas_dict,
-                                   game_state, computer_position_in_game_state, depth - 1, board_size, False)
+                                   game_state, computer_position_in_game_state, depth - 1, board_size, False,
+                                   minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value)
             game_state[((field - 1) * 2) + bonus] = 0
             if minmax_result == 1:
                 return minmax_result
@@ -119,12 +124,14 @@ def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field
         best_score = 2
         bonus = 1 - computer_position_in_game_state
         fields = prepare_fields(four_checker_formulas_dict, three_checker_formulas_dict,
-                                nearby_field_checker_formulas_dict, main_formulas_dict, board_size, game_state)
+                                nearby_field_checker_formulas_dict, main_formulas_dict, board_size, game_state,
+                                minmax_number_of_fields_value, minmax_option_value)
         for field in fields:
             game_state[((field - 1) * 2) + bonus] = 1
             minmax_result = minmax(four_checker_formulas_dict, three_checker_formulas_dict,
                                    nearby_field_checker_formulas_dict, main_formulas_dict, evaluation_formulas_dict,
-                                   game_state, computer_position_in_game_state, depth - 1, board_size, True)
+                                   game_state, computer_position_in_game_state, depth - 1, board_size, True,
+                                   minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value)
             game_state[((field - 1) * 2) + bonus] = 0
             if minmax_result == -1:
                 return minmax_result
@@ -134,23 +141,28 @@ def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field
 
 @njit(nogil=True)
 def prepare_fields(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field_checker_formulas_dict,
-                   main_formulas_dict, board_size, game_state):
-    number_of_field = 5
+                   main_formulas_dict, board_size, game_state, minmax_number_of_fields_value, minmax_option_value):
     non_corrupted_fields = [index for index in range(1, (board_size ** 2) + 1) if
                             not game_state[(index - 1) * 2] == 1 and not game_state[((index - 1) * 2) + 1] == 1]
-    fields = check_additional_formulas(four_checker_formulas_dict, non_corrupted_fields, game_state)
-    [fields.append(field) for field in
-     check_additional_formulas(three_checker_formulas_dict, non_corrupted_fields, game_state) if field not in fields]
-    if len(fields) < number_of_field:
-        nfc_fields = [field for field in
-                      check_additional_formulas(nearby_field_checker_formulas_dict, non_corrupted_fields, game_state) if
-                      field not in fields]
-        mfc_fields = check_main_formulas(main_formulas_dict, nfc_fields, game_state)
-        number_of_missing_fields = number_of_field - len(fields)
-        [fields.append(result[1]) for result in mfc_fields[:number_of_missing_fields] if result[1] not in fields]
-        return fields
-    else:
-        return fields[:number_of_field]
+    if minmax_option_value == "all non corrupted fields":
+        return List(non_corrupted_fields)
+    if minmax_option_value == "nearby fields":
+        return check_additional_formulas(nearby_field_checker_formulas_dict, non_corrupted_fields, game_state)
+    if minmax_option_value == "fields chosen by formulas":
+        fields = check_additional_formulas(four_checker_formulas_dict, non_corrupted_fields, game_state)
+        [fields.append(field) for field in
+         check_additional_formulas(three_checker_formulas_dict, non_corrupted_fields, game_state) if
+         field not in fields]
+        if len(fields) < minmax_number_of_fields_value:
+            nfc_fields = [field for field in
+                          check_additional_formulas(nearby_field_checker_formulas_dict, non_corrupted_fields,
+                                                    game_state) if field not in fields]
+            mfc_fields = check_main_formulas(main_formulas_dict, nfc_fields, game_state)
+            number_of_missing_fields = minmax_number_of_fields_value - len(fields)
+            [fields.append(result[1]) for result in mfc_fields[:number_of_missing_fields] if result[1] not in fields]
+            return fields
+        else:
+            return fields[:minmax_number_of_fields_value]
 
 
 @njit(nogil=True)
@@ -281,7 +293,8 @@ def check_evaluation_formulas(evaluation_formulas_dict, game_state, computer_pos
 
 
 @njit(nogil=True)
-def get_score(evaluation_formulas_dict, game_state, board_size, computer_position_in_game_state):
+def get_score(evaluation_formulas_dict, game_state, board_size, computer_position_in_game_state,
+              evaluation_function_option_value):
     corrupted_fields_by_computer = []
     corrupted_fields_by_human = []
     human_position_in_game_state = 0 if computer_position_in_game_state == 1 else 1
@@ -292,7 +305,10 @@ def get_score(evaluation_formulas_dict, game_state, board_size, computer_positio
         if value == 1:
             corrupted_fields_by_human.append(transform_index_to_coordinate(index + 1, board_size))
     if len(corrupted_fields_by_computer) < 5 and len(corrupted_fields_by_human) < 5:
-        return check_evaluation_formulas(evaluation_formulas_dict, game_state, computer_position_in_game_state)
+        if evaluation_function_option_value == "on":
+            return check_evaluation_formulas(evaluation_formulas_dict, game_state, computer_position_in_game_state)
+        else:
+            return 0
     for index, corrupted_fields in enumerate([corrupted_fields_by_computer, corrupted_fields_by_human]):
         for y in range(1, board_size + 1):
             fields = [corrupted_field for corrupted_field in corrupted_fields if corrupted_field[1] == y]
@@ -328,7 +344,10 @@ def get_score(evaluation_formulas_dict, game_state, board_size, computer_positio
                 wanted_fields = [(field[0] - i, field[1] + i) for i in range(1, 5)]
                 if check_elements_membership(wanted_fields, corrupted_fields, True):
                     return 1 if index == 0 else -1
-    return check_evaluation_formulas(evaluation_formulas_dict, game_state, computer_position_in_game_state)
+    if evaluation_function_option_value == "on":
+        return check_evaluation_formulas(evaluation_formulas_dict, game_state, computer_position_in_game_state)
+    else:
+        return 0
 
 
 @njit(nogil=True)
@@ -344,8 +363,3 @@ def check_elements_membership(iterable_to_check, target_iterable, should_be_in_t
 @njit(nogil=True)
 def transform_index_to_coordinate(index, board_size):
     return ((index - 1) % board_size) + 1, math.ceil(index / board_size)
-
-
-@njit(nogil=True)
-def transform_coordinate_to_index(x, y, board_size):
-    return (board_size * y) - (board_size - x)
