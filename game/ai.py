@@ -85,7 +85,7 @@ class AI:
                                self._nearby_field_checker_formulas_dict, self._main_formulas_dict,
                                self._evaluation_formulas_dict, array(game_state, dtype=int16),
                                computer_position_in_game_state, player_options_tuple[4], self._board_size, False,
-                               player_options_tuple[3], player_options_tuple[2], player_options_tuple[1])
+                               player_options_tuple[3], player_options_tuple[2], player_options_tuple[1], -2, 2)
                 game_state[((field - 1) * 2) + computer_position_in_game_state] = 0
                 if score == 1:
                     return field
@@ -98,7 +98,8 @@ class AI:
 @njit(nogil=True)
 def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field_checker_formulas_dict,
            main_formulas_dict, evaluation_formulas_dict, game_state, computer_position_in_game_state, depth, board_size,
-           maximizer, minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value):
+           maximizer, minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value, alpha,
+           beta):
     score = get_score(evaluation_formulas_dict, game_state, board_size, computer_position_in_game_state,
                       evaluation_function_option_value)
     if depth == 1 or score == 1 or score == -1 or sum(game_state) == (board_size ** 2):
@@ -114,11 +115,15 @@ def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field
             minmax_result = minmax(four_checker_formulas_dict, three_checker_formulas_dict,
                                    nearby_field_checker_formulas_dict, main_formulas_dict, evaluation_formulas_dict,
                                    game_state, computer_position_in_game_state, depth - 1, board_size, False,
-                                   minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value)
+                                   minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value,
+                                   alpha, beta)
             game_state[((field - 1) * 2) + bonus] = 0
             if minmax_result == 1:
                 return minmax_result
             best_score = max(best_score, minmax_result)
+            alpha = max(alpha, minmax_result)
+            if beta <= alpha:
+                break
         return best_score
     else:
         best_score = 2
@@ -131,11 +136,15 @@ def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field
             minmax_result = minmax(four_checker_formulas_dict, three_checker_formulas_dict,
                                    nearby_field_checker_formulas_dict, main_formulas_dict, evaluation_formulas_dict,
                                    game_state, computer_position_in_game_state, depth - 1, board_size, True,
-                                   minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value)
+                                   minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value,
+                                   alpha, beta)
             game_state[((field - 1) * 2) + bonus] = 0
             if minmax_result == -1:
                 return minmax_result
             best_score = min(best_score, minmax_result)
+            beta = min(beta, minmax_result)
+            if beta <= alpha:
+                break
         return best_score
 
 
