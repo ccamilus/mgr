@@ -29,7 +29,8 @@ class MainGenerator:
         test_data = all_ones[:len(all_ones) // 2] + all_zeros[:len(all_zeros) // 2]
         return train_data, ones, zeros, test_data
 
-    def _create_clause_fields_around(self, target_field, depth_level):
+    def _create_clause_fields_around(self, target_field):
+        depth_level = 1
         fields_around_target = []
         target_x, target_y = u.transform_index_to_coordinate(target_field, BOARD_SIZE)
         y = target_y - depth_level
@@ -164,12 +165,12 @@ class MainGenerator:
                 chosen_columns.append(chosen_column)
         return clause
 
-    def _create_main_formula(self, data, clause_types, target_field, num_clauses, num_literals, depth_level):
+    def _create_main_formula(self, data, clause_types, target_field, num_clauses, num_literals):
         tmp_number_of_clauses = num_clauses
         tmp_clause_types = clause_types
         formula = []
         if 0 in clause_types:
-            formula.append(self._create_clause_fields_around(target_field, depth_level))
+            formula.append(self._create_clause_fields_around(target_field))
             tmp_number_of_clauses -= 1
             tmp_clause_types.remove(0)
         for _ in range(tmp_number_of_clauses):
@@ -211,10 +212,10 @@ class MainGenerator:
             logic_values.append(all(clause_logic_values))
         return sum(logic_values), len(logic_values) - sum(logic_values)
 
-    def _print_main_formulas_results(self, num_generated_files, num_files, field, num_generated_formulas, num_formulas):
+    def _print_main_formulas_results(self, formula_type, field, num_generated_formulas, num_formulas):
         os.system('cls' if os.name == 'nt' else 'clear')
-        print(f"ready {num_generated_files} of {num_files} files")
-        print(f"{num_generated_formulas} out of {num_formulas} formulas were generated for field {field}")
+        print(f"{num_generated_formulas} out of {num_formulas} formulas (formula set type = {formula_type}) "
+              f"were generated for field {field}")
 
     def _print_evaluation_formulas_results(self, num_generated_formulas, num_formulas, player):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -297,12 +298,12 @@ class MainGenerator:
             clauses.append(game_state_properties)
         return clauses
 
-    def _test_generated_formulas(self, test_data, formulas):
+    def _test_generated_formulas(self, test_data, first_type_formulas, second_type_formulas):
         well_guessed_rows = 0
         for row in test_data:
-            good_results = 0
-            bad_results = 0
-            for formula in formulas:
+            first_type_formulas_result = 0
+            second_type_formulas_result = 0
+            for formula in first_type_formulas:
                 clause_logic_values = []
                 for clause in formula:
                     literal_logic_values = []
@@ -310,58 +311,78 @@ class MainGenerator:
                         value = row[literal[1]]
                         literal_logic_values.append(not bool(value) if literal[0] else bool(value))
                     clause_logic_values.append(any(literal_logic_values))
-                if all(clause_logic_values) == row[-1]:
-                    good_results += 1
-                else:
-                    bad_results += 1
-            if good_results > bad_results:
+                if all(clause_logic_values):
+                    first_type_formulas_result += 1
+            for formula in second_type_formulas:
+                clause_logic_values = []
+                for clause in formula:
+                    literal_logic_values = []
+                    for literal in clause:
+                        value = row[literal[1]]
+                        literal_logic_values.append(not bool(value) if literal[0] else bool(value))
+                    clause_logic_values.append(any(literal_logic_values))
+                if all(clause_logic_values):
+                    second_type_formulas_result += 1
+            proposal_value = first_type_formulas_result > second_type_formulas_result
+            if row[-1] == proposal_value:
                 well_guessed_rows += 1
         return round((well_guessed_rows * 100) / len(test_data), 2)
 
-    def generate_main_formulas(self, csv_dirs, formula_type, clause_types, num_literals, num_clauses, num_formulas,
-                               depth_level=1):
-        number_of_generated_files = 0
-        for file_dir in csv_dirs:
-            print(file_dir)
-            data = self._get_data(file_dir)
-            train_data, ones, zeros, test_data = self._divide_data(data)
-            field = int(Path(file_dir).stem)
-            if formula_type == 1:
-                one_formulas = []
-                self._print_main_formulas_results(number_of_generated_files, len(csv_dirs), field, len(one_formulas),
-                                                  num_formulas)
-                while len(one_formulas) < num_formulas:
-                    formula = self._create_main_formula(train_data, clause_types, field, num_clauses, num_literals,
-                                                        depth_level)
-                    s1, n1 = self._check_formula(formula, ones)
-                    s0, n0 = self._check_formula(formula, zeros)
-                    if (s1 + n0) > 2 * (s0 + n1) and s1 > 1.5 * n1:
-                        if formula not in one_formulas:
-                            one_formulas.append(formula)
-                            self._print_main_formulas_results(number_of_generated_files, len(csv_dirs), field,
-                                                              len(one_formulas), num_formulas)
-                precision = self._test_generated_formulas(test_data, one_formulas)
-                _save_formulas_as_cnf_file(one_formulas, field, BASE_DIR.joinpath("cnf/main"), formula_type,
-                                           num_clauses, num_formulas, precision)
-                number_of_generated_files += 1
-            if formula_type == 0:
-                zero_formulas = []
-                self._print_main_formulas_results(number_of_generated_files, len(csv_dirs), field, len(zero_formulas),
-                                                  num_formulas)
-                while len(zero_formulas) < num_formulas:
-                    formula = self._create_main_formula(train_data, clause_types, field, num_clauses, num_literals,
-                                                        depth_level)
-                    s0, n0 = self._check_formula(formula, zeros)
-                    s1, n1 = self._check_formula(formula, ones)
-                    if (s0 + n1) > 2 * (s1 + n0) and n1 >= 0.7 * s1:
-                        if formula not in zero_formulas:
-                            zero_formulas.append(formula)
-                            self._print_main_formulas_results(number_of_generated_files, len(csv_dirs), field,
-                                                              len(zero_formulas), num_formulas)
-                precision = self._test_generated_formulas(test_data, zero_formulas)
-                _save_formulas_as_cnf_file(zero_formulas, field, BASE_DIR.joinpath("cnf/main"), formula_type,
-                                           num_clauses, num_formulas, precision)
-                number_of_generated_files += 1
+    def _save_testing_results_for_main_formulas(self, field, precision, output_path):
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        fields = []
+        oddity_bonus = 0 if BOARD_SIZE % 2 == 0 else 1
+        center = (BOARD_SIZE // 2) + oddity_bonus
+        for i in range(1, center + 1):
+            for j in range(1, i + 1):
+                fields.append((BOARD_SIZE * i) - (BOARD_SIZE - j))
+        symmetry_fields = []
+        for field_index in [index + 1 for index in range(BOARD_SIZE ** 2) if index + 1 not in fields]:
+            classifiers = self._get_classifiers(field_index)
+            symmetry_field = field_index
+            for classifier in classifiers:
+                symmetry_field = self._perform_symmetry_on_field(symmetry_field, classifier)
+                if symmetry_field == field:
+                    symmetry_fields.append(symmetry_field)
+        with open(Path(output_path).joinpath(f"{field}_results.txt"), "w") as result_file:
+            result_file.write(f"Precision for field {field} {str(symmetry_fields)} is {precision}%")
+
+    def _save_testing_results_for_evaluation_formulas(self, precision, output_path):
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        with open(Path(output_path).joinpath(f"evaluation_results.txt"), "w") as result_file:
+            result_file.write(f"Precision for evaluation function is {precision}%")
+
+    def generate_main_formulas(self, field, ones_conf, zeros_conf, num_formulas):
+        data = self._get_data(BASE_DIR.joinpath(f"csv/main/{field}.csv"))
+        train_data, ones, zeros, test_data = self._divide_data(data)
+        one_formulas = []
+        self._print_main_formulas_results(1, field, len(one_formulas), num_formulas)
+        while len(one_formulas) < num_formulas:
+            formula = self._create_main_formula(train_data, ones_conf[2], field, ones_conf[1], ones_conf[0])
+            s1, n1 = self._check_formula(formula, ones)
+            s0, n0 = self._check_formula(formula, zeros)
+            if (s1 + n0) > 2 * (s0 + n1) and s1 > 1.5 * n1:
+                if formula not in one_formulas:
+                    one_formulas.append(formula)
+                    self._print_main_formulas_results(1, field, len(one_formulas), num_formulas)
+        zero_formulas = []
+        self._print_main_formulas_results(0, field, len(zero_formulas), num_formulas)
+        while len(zero_formulas) < num_formulas:
+            formula = self._create_main_formula(train_data, zeros_conf[2], field, zeros_conf[1], zeros_conf[0])
+            s0, n0 = self._check_formula(formula, zeros)
+            s1, n1 = self._check_formula(formula, ones)
+            if (s0 + n1) > 2 * (s1 + n0) and n1 >= 0.7 * s1:
+                if formula not in zero_formulas:
+                    zero_formulas.append(formula)
+                    self._print_main_formulas_results(0, field, len(zero_formulas), num_formulas)
+        precision = self._test_generated_formulas(test_data, one_formulas, zero_formulas)
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print(f"The formulas for field {field} were generated with precision equals {precision}%")
+        _save_formulas_as_cnf_file(one_formulas, field, BASE_DIR.joinpath("cnf/main"), 1, ones_conf[1], num_formulas)
+        _save_formulas_as_cnf_file(zero_formulas, field, BASE_DIR.joinpath("cnf/main"), 0, zeros_conf[1], num_formulas)
+        self._save_testing_results_for_main_formulas(field, precision, BASE_DIR.joinpath("cnf/main/results"))
 
     def generate_rest_main_formulas(self, formula_type):
         symmetry_fields_indexes = []
@@ -379,17 +400,14 @@ class MainGenerator:
                 target_field = self._perform_symmetry_on_field(target_field, classifier)
             classifiers.reverse()
             with open(BASE_DIR.joinpath(f"cnf/main/{target_field}_{formula_type}.cnf"), "r") as cnf_file:
-                file_lines = [line.strip() for line in cnf_file]
-            precision = file_lines[1]
-            content = [_ for _ in file_lines if not _.startswith("c")]
-            parameters = content[0]
-            clauses = self._get_clauses_as_tuples(content[1:])
+                content = [line.strip() for line in cnf_file if not line.startswith('c')]
+                parameters = content[0]
+                clauses = self._get_clauses_as_tuples(content[1:])
             new_clauses = copy.deepcopy(clauses)
             for classifier in classifiers:
                 new_clauses = self._perform_symmetry_on_clauses(new_clauses, classifier)
             with open(BASE_DIR.joinpath(f"cnf/main/{field_index}_{formula_type}.cnf"), "w") as cnf_file:
-                cnf_file.write(f"c {field_index}_{formula_type}.cnf\n")
-                cnf_file.write(f"{precision}\nc\n")
+                cnf_file.write(f"c {field_index}_{formula_type}.cnf\nc\n")
                 cnf_file.write(f"c field = {field_index}\nc formula set type = {formula_type}\nc\n")
                 cnf_file.write(f"{parameters}\n")
                 for clause in new_clauses:
@@ -401,37 +419,37 @@ class MainGenerator:
                             cnf_file.write(f"{column_index} ")
                     cnf_file.write("\n")
 
-    def generate_evaluation_formulas(self, player, clause_types, num_literals, num_clauses, num_formulas):
+    def generate_evaluation_formulas(self, ones_conf, zeros_conf, num_formulas):
         data = self._get_data(BASE_DIR.joinpath("csv/evaluation/evaluation.csv"))
         train_data, ones, zeros, test_data = self._divide_data(data)
-        if player == 0:
-            zero_formulas = []
-            self._print_evaluation_formulas_results(len(zero_formulas), num_formulas, 0)
-            while len(zero_formulas) < num_formulas:
-                formula = self._create_evaluation_formula(train_data, clause_types, num_clauses, num_literals)
-                s0, n0 = self._check_formula(formula, zeros)
-                s1, n1 = self._check_formula(formula, ones)
-                if (s0 + n1) > 2 * (s1 + n0) and s0 > 1.5 * n0:
-                    if formula not in zero_formulas:
-                        zero_formulas.append(formula)
-                        self._print_evaluation_formulas_results(len(zero_formulas), num_formulas, 0)
-            precision = self._test_generated_formulas(test_data, zero_formulas)
-            _save_formulas_as_cnf_file(zero_formulas, None, BASE_DIR.joinpath("cnf/evaluation"), player, num_clauses,
-                                       num_formulas, precision)
-        if player == 1:
-            one_formulas = []
-            self._print_evaluation_formulas_results(len(one_formulas), num_formulas, 1)
-            while len(one_formulas) < num_formulas:
-                formula = self._create_evaluation_formula(train_data, clause_types, num_clauses, num_literals)
-                s1, n1 = self._check_formula(formula, ones)
-                s0, n0 = self._check_formula(formula, zeros)
-                if (s1 + n0) > 2 * (s0 + n1) and s1 > 1.5 * n1:
-                    if formula not in one_formulas:
-                        one_formulas.append(formula)
-                        self._print_evaluation_formulas_results(len(one_formulas), num_formulas, 1)
-            precision = self._test_generated_formulas(test_data, one_formulas)
-            _save_formulas_as_cnf_file(one_formulas, None, BASE_DIR.joinpath("cnf/evaluation"), player, num_clauses,
-                                       num_formulas, precision)
+        one_formulas = []
+        self._print_evaluation_formulas_results(len(one_formulas), num_formulas, 1)
+        while len(one_formulas) < num_formulas:
+            formula = self._create_evaluation_formula(train_data, ones_conf[2], ones_conf[1], ones_conf[0])
+            s1, n1 = self._check_formula(formula, ones)
+            s0, n0 = self._check_formula(formula, zeros)
+            if (s1 + n0) > 2 * (s0 + n1) and s1 > 1.5 * n1:
+                if formula not in one_formulas:
+                    one_formulas.append(formula)
+                    self._print_evaluation_formulas_results(len(one_formulas), num_formulas, 1)
+        zero_formulas = []
+        self._print_evaluation_formulas_results(len(zero_formulas), num_formulas, 0)
+        while len(zero_formulas) < num_formulas:
+            formula = self._create_evaluation_formula(train_data, zeros_conf[2], zeros_conf[1], zeros_conf[0])
+            s0, n0 = self._check_formula(formula, zeros)
+            s1, n1 = self._check_formula(formula, ones)
+            if (s0 + n1) > 2 * (s1 + n0) and s0 > 1.5 * n0:
+                if formula not in zero_formulas:
+                    zero_formulas.append(formula)
+                    self._print_evaluation_formulas_results(len(zero_formulas), num_formulas, 0)
+        precision = self._test_generated_formulas(test_data, one_formulas, zero_formulas)
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print(f"The evaluation formulas were generated with precision equals {precision}%")
+        _save_formulas_as_cnf_file(one_formulas, None, BASE_DIR.joinpath("cnf/evaluation"), 1, ones_conf[1],
+                                   num_formulas)
+        _save_formulas_as_cnf_file(zero_formulas, None, BASE_DIR.joinpath("cnf/evaluation"), 0, zeros_conf[1],
+                                   num_formulas)
+        self._save_testing_results_for_evaluation_formulas(precision, BASE_DIR.joinpath("cnf/evaluation/results"))
 
 
 class AdditionalGenerator:
@@ -822,23 +840,21 @@ class AdditionalGenerator:
             self._nearby_field_checker(field)
 
 
-def _save_formulas_as_cnf_file(formulas, field, output_path, formula_type, number_of_clauses, number_of_formulas,
-                               precision=None):
+def _save_formulas_as_cnf_file(formulas, field, output_path, formula_type, number_of_clauses, number_of_formulas):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
-    precision_information = f"c precision = {precision}%\nc\n" if precision else f"c\n"
     if field:
         file_dir = Path(output_path).joinpath(f"{field}_{formula_type}.cnf")
         comments = (f"c {field}_{formula_type}.cnf\n"
-                    f"{precision_information}"
-                    f"c evaluation function\n"
-                    f"c player = {formula_type}\n"
+                    f"c\n"
+                    f"c field = {field}\n"
+                    f"c formula set type = {formula_type}\n"
                     f"c\n"
                     f"p cnf {number_of_clauses} {number_of_formulas}\n")
     else:
         file_dir = Path(output_path).joinpath(f"evaluation_player_{formula_type}.cnf")
         comments = (f"c evaluation_player_{formula_type}.cnf\n"
-                    f"{precision_information}"
+                    f"c\n"
                     f"c evaluation function\n"
                     f"c player = {formula_type}\n"
                     f"c\n"
@@ -853,26 +869,28 @@ def _save_formulas_as_cnf_file(formulas, field, output_path, formula_type, numbe
 
 
 def main():
-    mg = MainGenerator()
-    mg.generate_main_formulas([BASE_DIR.joinpath(f"csv/main/{f}.csv") for f in
-                               [1, 16, 17, 31, 32, 33, 46, 47, 48, 49, 61, 62, 63, 64, 65, 76, 77, 78, 79, 81, 91, 92,
-                                93, 94, 97, 106, 107, 108, 109, 110, 111, 112, 113]], 0, [1, 2], 3, 25, 100)
-    mg.generate_main_formulas([BASE_DIR.joinpath(f"csv/main/shifted/{f}.csv") for f in [80, 95, 96]], 0, [1, 2], 3, 25,
-                              100)
-    mg.generate_main_formulas([BASE_DIR.joinpath(f"csv/main/{f}.csv") for f in
-                               [1, 17, 32, 33, 47, 48, 49, 61, 62, 63, 64, 65, 76, 77, 78, 79, 80, 91, 92, 93, 94, 97,
-                                106, 107, 108, 109, 110, 112]], 1, [0, 3, 4], 3, 25, 100)
-    mg.generate_main_formulas([BASE_DIR.joinpath(f"csv/main/{f}.csv") for f in [31, 46]], 1, [0, 3, 4], 4, 25, 100)
-    mg.generate_main_formulas([BASE_DIR.joinpath(f"csv/main/{f}.csv") for f in [16]], 1, [0, 3, 4], 4, 20, 100)
-    mg.generate_main_formulas([BASE_DIR.joinpath(f"csv/main/{f}.csv") for f in [113]], 1, [0, 3, 4], 3, 45, 100)
-    mg.generate_main_formulas([BASE_DIR.joinpath(f"csv/main/{f}.csv") for f in [81, 95, 96, 111]], 1, [1, 2, 3, 4], 3,
-                              70, 100)
-    mg.generate_rest_main_formulas(0)
-    mg.generate_rest_main_formulas(1)
-    mg.generate_evaluation_formulas(0, [1, 2], 3, 45, 200)
-    mg.generate_evaluation_formulas(1, [1, 2, 3], 3, 25, 200)
     ag = AdditionalGenerator()
     ag.generate()
+    mg = MainGenerator()
+    mg.generate_evaluation_formulas([3, 25, [1, 2, 3]], [3, 45, [1, 2]], 100)
+    fields = [1, 17, 32, 33, 47, 48, 49, 61, 62, 63, 64, 65, 76, 77, 78, 79, 80, 91, 92, 93, 94, 97, 106, 107, 108, 109,
+              110, 112]
+    for field in fields:
+        mg.generate_main_formulas(field, [3, 25, [0, 3, 4]], [3, 25, [1, 2]], 100)
+    fields = [31, 46]
+    for field in fields:
+        mg.generate_main_formulas(field, [4, 25, [0, 3, 4]], [3, 25, [1, 2]], 100)
+    fields = [16]
+    for field in fields:
+        mg.generate_main_formulas(field, [4, 20, [0, 3, 4]], [3, 25, [1, 2]], 100)
+    fields = [113]
+    for field in fields:
+        mg.generate_main_formulas(field, [3, 45, [0, 3, 4]], [3, 25, [1, 2]], 100)
+    fields = [81, 95, 96, 111]
+    for field in fields:
+        mg.generate_main_formulas(field, [3, 70, [1, 2, 3, 4]], [3, 25, [1, 2]], 100)
+    mg.generate_rest_main_formulas(0)
+    mg.generate_rest_main_formulas(1)
 
 
 if __name__ == "__main__":

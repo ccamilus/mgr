@@ -42,9 +42,7 @@ class CsvFieldShifter:
         except FileNotFoundError:
             print(f"File with base field {base_field} not found")
         else:
-            if not os.path.exists(BASE_DIR.joinpath(f"csv/main/shifted")):
-                os.makedirs(BASE_DIR.joinpath(f"csv/main/shifted"))
-            with open(BASE_DIR.joinpath(f"csv/main/shifted/{target_field}.csv"), "w", newline="") as csv_file:
+            with open(BASE_DIR.joinpath(f"csv/main/{target_field}.csv"), "w", newline="") as csv_file:
                 writer = csv.writer(csv_file)
                 writer.writerows(shifted_rows)
 
