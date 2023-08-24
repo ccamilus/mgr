@@ -19,6 +19,7 @@ class AI:
         self._four_checker_formulas_dict = self._prepare_additional_formulas("4_checker")
         self._three_checker_formulas_dict = self._prepare_additional_formulas("3_checker")
         self._nearby_field_checker_formulas_dict = self._prepare_additional_formulas("nearby_field_checker")
+        self._initialize_components()
 
     def _create_formulas(self, number_of_clauses, data):
         raw_formulas = [data[i:i + int(number_of_clauses)] for i in range(0, len(data), int(number_of_clauses))]
@@ -65,6 +66,16 @@ class AI:
                     formulas += self._create_formulas(all_data[0].split()[2], all_data[1:])
             additional_formulas_dict[f] = List(formulas)
         return additional_formulas_dict
+
+    def _initialize_components(self):
+        game_state = [0 for _ in range((self._board_size ** 2) * 2)]
+        non_corrupted_fields = [i for i in range(1, (self._board_size ** 2) + 1) if
+                                not game_state[(i - 1) * 2] == 1 and not game_state[((i - 1) * 2) + 1] == 1]
+        random.choice(check_main_formulas(self._main_formulas_dict, array(non_corrupted_fields, dtype=uint8),
+                                          array(game_state, dtype=int16))[:10])
+        minmax(self._four_checker_formulas_dict, self._three_checker_formulas_dict,
+               self._nearby_field_checker_formulas_dict, self._main_formulas_dict, self._evaluation_formulas_dict,
+               array(game_state, dtype=int16), 0, 2, 15, False, 2, "on", "fields chosen by formulas", -2, 2)
 
     def get_best_move(self, game_state, computer_position_in_game_state, player_options_tuple):
         non_corrupted_fields = [i for i in range(1, (self._board_size ** 2) + 1) if
