@@ -615,9 +615,10 @@ class Game:
             self._screen.blit(title_icon, title_icon_rect)
             self._first_player_options.handle(self._screen, events)
             self._second_player_options.handle(self._screen, events)
-            exit_button = Button((SCREEN_WIDTH // 2) + 110, 571, 110, 50, "Exit", 35)
-            play_button = Button((SCREEN_WIDTH // 2) - 110, 571, 110, 50, "Play", 35)
-            for button in [play_button, exit_button]:
+            play_button = Button(90, 571, 140, 50, "Play", 35)
+            about_button = Button(SCREEN_WIDTH // 2, 571, 140, 50, "About", 35)
+            exit_button = Button(410, 571, 140, 50, "Exit", 35)
+            for button in [play_button, exit_button, about_button]:
                 button.change_color(mouse_coord[0], mouse_coord[1])
                 button.update(self._screen)
             for event in events:
@@ -632,9 +633,49 @@ class Game:
                              second_player_options_tuple[0][1] == "human") or self._ai):
                             self._start_game(first_player_options_tuple, second_player_options_tuple)
                         self._loading_screen(first_player_options_tuple, second_player_options_tuple)
+                    if about_button.check_for_input(mouse_coord[0], mouse_coord[1]):
+                        self._about_screen()
                     if exit_button.check_for_input(mouse_coord[0], mouse_coord[1]):
                         pygame.quit()
                         sys.exit()
+            pygame.display.update()
+
+    def _about_screen(self):
+        while True:
+            self._clock.tick(FPS)
+            self._screen.fill(BLUE_WHALE_COLOR)
+            title_text = pygame.font.Font(DEFAULT_FONT, 60).render("Gomoku", True, WHITE_SMOKE_COLOR)
+            title_rect = title_text.get_rect(center=((SCREEN_WIDTH // 2) - 17, 80))
+            self._screen.blit(title_text, title_rect)
+            title_icon = pygame.transform.scale(ICON, (70, 70))
+            title_icon_rect = title_icon.get_rect(center=((SCREEN_WIDTH // 2) + 110, 58))
+            self._screen.blit(title_icon, title_icon_rect)
+            content_lines = ["Gomoku is a two-player strategy game that involves",
+                             "placing pawns on a board. The object of the game is to",
+                             "arrange 5 pawns in a row, vertically, horizontally or",
+                             "diagonally. Placing more than 5 pawns does not win.", "",
+                             "This program implements artificial intelligence which is",
+                             "based on propositional calculus.", "",
+                             "The author of the program is Kamil Cichomski.", "",
+                             "The author of open source Yoster Island fonts used in",
+                             "the program is codeman38."]
+            for index, line in enumerate(content_lines):
+                line_text = pygame.font.Font(DEFAULT_FONT, 13).render(line, True, SHIP_COVE_COLOR)
+                line_rect = line_text.get_rect(topleft=(40, 170 + (20 * index)))
+                self._screen.blit(line_text, line_rect)
+            mouse_coord = pygame.mouse.get_pos()
+            events = pygame.event.get()
+            menu_button = Button(SCREEN_WIDTH // 2, 571, 140, 50, "Menu", 35)
+            for button in [menu_button]:
+                button.change_color(mouse_coord[0], mouse_coord[1])
+                button.update(self._screen)
+            for event in events:
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if menu_button.check_for_input(mouse_coord[0], mouse_coord[1]):
+                        self._main_menu()
             pygame.display.update()
 
     def _loading_screen(self, first_player_options_tuple, second_player_options_tuple):
