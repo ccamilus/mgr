@@ -75,7 +75,7 @@ class AI:
                                           array(game_state, dtype=int16))[:10])
         minmax(self._four_checker_formulas_dict, self._three_checker_formulas_dict,
                self._nearby_field_checker_formulas_dict, self._main_formulas_dict, self._evaluation_formulas_dict,
-               array(game_state, dtype=int16), 0, 2, 15, False, 2, "on", "fields chosen by formulas", -2, 2)
+               array(game_state, dtype=int16), 0, 2, 15, False, 2, "on", "fields chosen by formulas", -2, 2, "all")
 
     def get_best_move(self, game_state, computer_position_in_game_state, player_options_tuple):
         non_corrupted_fields = [i for i in range(1, (self._board_size ** 2) + 1) if
@@ -89,14 +89,15 @@ class AI:
             fields = prepare_fields(self._four_checker_formulas_dict, self._three_checker_formulas_dict,
                                     self._nearby_field_checker_formulas_dict, self._main_formulas_dict,
                                     self._board_size, array(game_state, dtype=int16), player_options_tuple[3],
-                                    player_options_tuple[1])
+                                    player_options_tuple[1], player_options_tuple[5])
             for field in fields:
                 game_state[((field - 1) * 2) + computer_position_in_game_state] = 1
                 score = minmax(self._four_checker_formulas_dict, self._three_checker_formulas_dict,
                                self._nearby_field_checker_formulas_dict, self._main_formulas_dict,
                                self._evaluation_formulas_dict, array(game_state, dtype=int16),
                                computer_position_in_game_state, player_options_tuple[4], self._board_size, False,
-                               player_options_tuple[3], player_options_tuple[2], player_options_tuple[1], -2, 2)
+                               player_options_tuple[3], player_options_tuple[2], player_options_tuple[1], -2, 2,
+                               player_options_tuple[5])
                 game_state[((field - 1) * 2) + computer_position_in_game_state] = 0
                 if score == 1:
                     return field
@@ -110,7 +111,7 @@ class AI:
 def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field_checker_formulas_dict,
            main_formulas_dict, evaluation_formulas_dict, game_state, computer_position_in_game_state, depth, board_size,
            maximizer, minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value, alpha,
-           beta):
+           beta, formulas_selection_value):
     score = get_score(evaluation_formulas_dict, game_state, board_size, computer_position_in_game_state,
                       evaluation_function_option_value)
     if depth == 1 or score == 1 or score == -1 or sum(game_state) == (board_size ** 2):
@@ -120,14 +121,14 @@ def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field
         bonus = 0 + computer_position_in_game_state
         fields = prepare_fields(four_checker_formulas_dict, three_checker_formulas_dict,
                                 nearby_field_checker_formulas_dict, main_formulas_dict, board_size, game_state,
-                                minmax_number_of_fields_value, minmax_option_value)
+                                minmax_number_of_fields_value, minmax_option_value, formulas_selection_value)
         for field in fields:
             game_state[((field - 1) * 2) + bonus] = 1
             minmax_result = minmax(four_checker_formulas_dict, three_checker_formulas_dict,
                                    nearby_field_checker_formulas_dict, main_formulas_dict, evaluation_formulas_dict,
                                    game_state, computer_position_in_game_state, depth - 1, board_size, False,
                                    minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value,
-                                   alpha, beta)
+                                   alpha, beta, formulas_selection_value)
             game_state[((field - 1) * 2) + bonus] = 0
             if minmax_result == 1:
                 return minmax_result
@@ -141,14 +142,14 @@ def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field
         bonus = 1 - computer_position_in_game_state
         fields = prepare_fields(four_checker_formulas_dict, three_checker_formulas_dict,
                                 nearby_field_checker_formulas_dict, main_formulas_dict, board_size, game_state,
-                                minmax_number_of_fields_value, minmax_option_value)
+                                minmax_number_of_fields_value, minmax_option_value, formulas_selection_value)
         for field in fields:
             game_state[((field - 1) * 2) + bonus] = 1
             minmax_result = minmax(four_checker_formulas_dict, three_checker_formulas_dict,
                                    nearby_field_checker_formulas_dict, main_formulas_dict, evaluation_formulas_dict,
                                    game_state, computer_position_in_game_state, depth - 1, board_size, True,
                                    minmax_number_of_fields_value, evaluation_function_option_value, minmax_option_value,
-                                   alpha, beta)
+                                   alpha, beta, formulas_selection_value)
             game_state[((field - 1) * 2) + bonus] = 0
             if minmax_result == -1:
                 return minmax_result
@@ -161,7 +162,8 @@ def minmax(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field
 
 @njit(nogil=True)
 def prepare_fields(four_checker_formulas_dict, three_checker_formulas_dict, nearby_field_checker_formulas_dict,
-                   main_formulas_dict, board_size, game_state, minmax_number_of_fields_value, minmax_option_value):
+                   main_formulas_dict, board_size, game_state, minmax_number_of_fields_value, minmax_option_value,
+                   formulas_selection_value):
     non_corrupted_fields = [index for index in range(1, (board_size ** 2) + 1) if
                             not game_state[(index - 1) * 2] == 1 and not game_state[((index - 1) * 2) + 1] == 1]
     if minmax_option_value == "all non corrupted fields":
@@ -169,20 +171,40 @@ def prepare_fields(four_checker_formulas_dict, three_checker_formulas_dict, near
     if minmax_option_value == "nearby fields":
         return check_additional_formulas(nearby_field_checker_formulas_dict, non_corrupted_fields, game_state)
     if minmax_option_value == "fields chosen by formulas":
-        fields = check_additional_formulas(four_checker_formulas_dict, non_corrupted_fields, game_state)
-        [fields.append(field) for field in
-         check_additional_formulas(three_checker_formulas_dict, non_corrupted_fields, game_state) if
-         field not in fields]
-        if len(fields) < minmax_number_of_fields_value:
-            nfc_fields = [field for field in
-                          check_additional_formulas(nearby_field_checker_formulas_dict, non_corrupted_fields,
-                                                    game_state) if field not in fields]
-            mfc_fields = check_main_formulas(main_formulas_dict, nfc_fields, game_state)
-            number_of_missing_fields = minmax_number_of_fields_value - len(fields)
-            [fields.append(result[1]) for result in mfc_fields[:number_of_missing_fields] if result[1] not in fields]
+        if formulas_selection_value == "all":
+            fields = check_additional_formulas(four_checker_formulas_dict, non_corrupted_fields, game_state)
+            [fields.append(field) for field in
+             check_additional_formulas(three_checker_formulas_dict, non_corrupted_fields, game_state) if
+             field not in fields]
+            if len(fields) < minmax_number_of_fields_value:
+                nfc_fields = [field for field in
+                              check_additional_formulas(nearby_field_checker_formulas_dict, non_corrupted_fields,
+                                                        game_state) if field not in fields]
+                mfc_fields = check_main_formulas(main_formulas_dict, nfc_fields, game_state)
+                number_of_missing_fields = minmax_number_of_fields_value - len(fields)
+                [fields.append(result[1]) for result in mfc_fields[:number_of_missing_fields] if
+                 result[1] not in fields]
+                return fields
+            else:
+                return fields[:minmax_number_of_fields_value]
+        if formulas_selection_value == "artificial":
+            fields = check_additional_formulas(four_checker_formulas_dict, non_corrupted_fields, game_state)
+            [fields.append(field) for field in
+             check_additional_formulas(three_checker_formulas_dict, non_corrupted_fields, game_state) if
+             field not in fields]
+            if len(fields) < minmax_number_of_fields_value:
+                nfc_fields = [field for field in
+                              check_additional_formulas(nearby_field_checker_formulas_dict, non_corrupted_fields,
+                                                        game_state) if field not in fields]
+                number_of_missing_fields = minmax_number_of_fields_value - len(fields)
+                [fields.append(field) for field in nfc_fields[:number_of_missing_fields] if field not in fields]
+                return fields
+            else:
+                return fields[:minmax_number_of_fields_value]
+        if formulas_selection_value == "learned":
+            mfc_fields = check_main_formulas(main_formulas_dict, non_corrupted_fields, game_state)
+            fields = List([result[1] for result in mfc_fields[:minmax_number_of_fields_value] if result[1]])
             return fields
-        else:
-            return fields[:minmax_number_of_fields_value]
 
 
 @njit(nogil=True)

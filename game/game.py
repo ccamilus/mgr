@@ -10,7 +10,7 @@ import pygame
 from ai import AI
 
 SCREEN_WIDTH = 500
-SCREEN_HEIGHT = 640
+SCREEN_HEIGHT = 690
 FPS = 60
 
 BLUE_WHALE_COLOR = (30, 47, 74)
@@ -173,6 +173,16 @@ class PlayerOptions:
                                                             False, "off")
         self._minmax_number_of_fields_input = NaturalNumberInput(self._left + 202, self._top + 122, 15, 2, 5)
         self._minmax_depth_input = NaturalNumberInput(self._left + 369, self._top + 77, 15, 2, "6")
+        self._formulas_selection_all_button = ToggleButton(self._left + 38, self._top + 180, 40, 20, "all", 13, False,
+                                                           True, "all")
+        self._formulas_selection_artificial_button = ToggleButton(self._left + 108, self._top + 180, 80, 20,
+                                                                  "artificial", 13, False, False, "artificial")
+        self._formulas_selection_learned_button = ToggleButton(self._left + 193, self._top + 180, 70, 20, "learned", 13,
+                                                               False, False, "learned")
+        self._round_time_human_input = NaturalNumberInput(self._left + 152, self._top + 27, 15, 4, "300")
+        self._increment_time_human_input = NaturalNumberInput(self._left + 143, self._top + 57, 15, 4, "5")
+        self._round_time_computer_input = NaturalNumberInput(self._left + 396, self._top + 107, 15, 4, "300")
+        self._increment_time_computer_input = NaturalNumberInput(self._left + 387, self._top + 137, 15, 4, "5")
 
     def _update_toggle_buttons_group(self, buttons_group, screen, events):
         mouse_coord = pygame.mouse.get_pos()
@@ -187,7 +197,7 @@ class PlayerOptions:
                             other_button.selected = (other_button == button)
 
     def handle(self, screen, events):
-        option_border = pygame.Rect(self._left, self._top, SCREEN_WIDTH - 40, 150)
+        option_border = pygame.Rect(self._left, self._top, SCREEN_WIDTH - 40, 200)
         pygame.draw.rect(screen, SHIP_COVE_COLOR, option_border, 2)
         player_sign_text = pygame.font.Font(DEFAULT_FONT, 25).render("X" if self._player_id == 0 else "0", True,
                                                                      MEDIUM_CARMINE_COLOR if self._player_id == 0 else SALEM_COLOR)
@@ -203,10 +213,15 @@ class PlayerOptions:
         screen.blit(player_sign_text, player_sign_rect)
         self._update_toggle_buttons_group([self._human_toggle_button, self._computer_toggle_button], screen, events)
         if self._human_toggle_button.selected:
-            message_text = pygame.font.Font(DEFAULT_FONT, 15).render("options for human player not available", True,
-                                                                     SHIP_COVE_COLOR)
-            message_rect = message_text.get_rect(centerx=option_border.centerx, centery=option_border.centery)
-            screen.blit(message_text, message_rect)
+            round_time_text = pygame.font.Font(DEFAULT_FONT, 13).render("round time in sec:", True, SHIP_COVE_COLOR)
+            round_time_rect = round_time_text.get_rect(topleft=(option_border.left + 15, option_border.top + 30))
+            screen.blit(round_time_text, round_time_rect)
+            self._round_time_human_input.handle(screen, events)
+            increment_time_text = pygame.font.Font(DEFAULT_FONT, 13).render("incr. time in sec:", True, SHIP_COVE_COLOR)
+            increment_time_rect = increment_time_text.get_rect(
+                topleft=(option_border.left + 15, option_border.top + 60))
+            screen.blit(increment_time_text, increment_time_rect)
+            self._increment_time_human_input.handle(screen, events)
         if self._computer_toggle_button.selected:
             pygame.draw.line(screen, SHIP_COVE_COLOR, (option_border.centerx + 15, option_border.top),
                              (option_border.centerx + 15, option_border.bottom - 1), 2)
@@ -219,13 +234,23 @@ class PlayerOptions:
                 [self._minmax_first_option_button, self._minmax_second_option_button, self._minmax_third_option_button],
                 screen, events)
             if self._minmax_first_option_button.selected:
-                minmax_fields_number_text = pygame.font.Font(DEFAULT_FONT, 13).render(
-                    "number of chosen fields:", True, SHIP_COVE_COLOR)
+                minmax_fields_number_text = pygame.font.Font(DEFAULT_FONT, 13).render("number of chosen fields:", True,
+                                                                                      SHIP_COVE_COLOR)
                 minmax_fields_number_rect = minmax_fields_number_text.get_rect(
                     topleft=(option_border.left + 15, option_border.top + 125))
                 screen.blit(minmax_fields_number_text, minmax_fields_number_rect)
                 self._minmax_number_of_fields_input.handle(screen, events)
+                formulas_selection_text = pygame.font.Font(DEFAULT_FONT, 13).render("formulas selection:", True,
+                                                                                    SHIP_COVE_COLOR)
+                formulas_selection_rect = formulas_selection_text.get_rect(
+                    topleft=(option_border.left + 15, option_border.top + 150))
+                screen.blit(formulas_selection_text, formulas_selection_rect)
+                self._update_toggle_buttons_group(
+                    [self._formulas_selection_all_button, self._formulas_selection_artificial_button,
+                     self._formulas_selection_learned_button], screen, events)
             self._minmax_depth_input.handle(screen, events)
+            self._round_time_computer_input.handle(screen, events)
+            self._increment_time_computer_input.handle(screen, events)
             evaluation_function_text = pygame.font.Font(DEFAULT_FONT, 13).render("evaluation function:", True,
                                                                                  SHIP_COVE_COLOR)
             evaluation_function_rect = evaluation_function_text.get_rect(left=option_border.centerx + 30,
@@ -236,6 +261,12 @@ class PlayerOptions:
             minmax_depth_text = pygame.font.Font(DEFAULT_FONT, 13).render("minmax depth:", True, SHIP_COVE_COLOR)
             minmax_depth_rect = minmax_depth_text.get_rect(left=option_border.centerx + 30, top=option_border.top + 80)
             screen.blit(minmax_depth_text, minmax_depth_rect)
+            round_time_text = pygame.font.Font(DEFAULT_FONT, 13).render("round time in sec:", True, SHIP_COVE_COLOR)
+            round_time_rect = round_time_text.get_rect(left=option_border.centerx + 30, top=option_border.top + 110)
+            screen.blit(round_time_text, round_time_rect)
+            increment_time_text = pygame.font.Font(DEFAULT_FONT, 13).render("incr. time in sec:", True, SHIP_COVE_COLOR)
+            increment_time_rect = round_time_text.get_rect(left=option_border.centerx + 30, top=option_border.top + 140)
+            screen.blit(increment_time_text, increment_time_rect)
 
     def get_values(self):
         player_name = None
@@ -243,8 +274,13 @@ class PlayerOptions:
         evaluation_function_option_value = None
         minmax_number_of_fields_value = None
         minmax_depth_value = None
+        formulas_selection_value = None
+        round_time_value = None
+        increment_time_value = None
         if self._human_toggle_button.selected:
             player_name = "human"
+            round_time_value = int(self._round_time_human_input.value)
+            increment_time_value = int(self._increment_time_human_input.value)
         if self._computer_toggle_button.selected:
             player_name = "computer"
             for button in [self._minmax_first_option_button, self._minmax_second_option_button,
@@ -258,8 +294,15 @@ class PlayerOptions:
                     break
             minmax_number_of_fields_value = int(self._minmax_number_of_fields_input.value)
             minmax_depth_value = int(self._minmax_depth_input.value)
-        return (self._player_id,
-                player_name), minmax_option_value, evaluation_function_option_value, minmax_number_of_fields_value, minmax_depth_value
+            for button in [self._formulas_selection_all_button, self._formulas_selection_artificial_button,
+                           self._formulas_selection_learned_button]:
+                if button.selected:
+                    formulas_selection_value = button.value
+            round_time_value = int(self._round_time_computer_input.value)
+            increment_time_value = int(self._increment_time_computer_input.value)
+        return ((self._player_id, player_name), minmax_option_value, evaluation_function_option_value,
+                minmax_number_of_fields_value, minmax_depth_value, formulas_selection_value, round_time_value,
+                increment_time_value)
 
 
 class Label:
@@ -417,8 +460,8 @@ class Game:
         self._clock = pygame.time.Clock()
         self._board_size = board_size
         self._screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self._first_player_options = PlayerOptions(0, 20, 176)
-        self._second_player_options = PlayerOptions(1, 20, 361)
+        self._first_player_options = PlayerOptions(0, 20, 150)
+        self._second_player_options = PlayerOptions(1, 20, 391)
         self._ai = None
 
     def _load_ai(self):
@@ -453,7 +496,24 @@ class Game:
                                                                 SHIP_COVE_COLOR)
         player_rect = player_text.get_rect(left=sign_rect.left + 5, top=sign_rect.bottom + 5)
         self._screen.blit(player_text, player_rect)
+        if player_options_tuple[0][1] == "human":
+            round_time_text = pygame.font.Font(DEFAULT_FONT, 13).render(
+                f"round time = {player_options_tuple[6]} sec", True, SHIP_COVE_COLOR)
+            round_time_rect = round_time_text.get_rect(left=sign_rect.left + 5, top=player_rect.bottom + 5)
+            self._screen.blit(round_time_text, round_time_rect)
+            increment_time_text = pygame.font.Font(DEFAULT_FONT, 13).render(
+                f"increment time = {player_options_tuple[7]} sec", True, SHIP_COVE_COLOR)
+            increment_time_rect = round_time_text.get_rect(left=sign_rect.left + 5, top=round_time_rect.bottom + 5)
+            self._screen.blit(increment_time_text, increment_time_rect)
         if player_options_tuple[0][1] == "computer":
+            round_time_text = pygame.font.Font(DEFAULT_FONT, 13).render(
+                f"round time = {player_options_tuple[6]} sec", True, SHIP_COVE_COLOR)
+            round_time_rect = round_time_text.get_rect(left=sign_rect.left + 5, top=player_rect.bottom + 5)
+            self._screen.blit(round_time_text, round_time_rect)
+            increment_time_text = pygame.font.Font(DEFAULT_FONT, 13).render(
+                f"increment time = {player_options_tuple[7]} sec", True, SHIP_COVE_COLOR)
+            increment_time_rect = round_time_text.get_rect(left=sign_rect.left + 5, top=round_time_rect.bottom + 5)
+            self._screen.blit(increment_time_text, increment_time_rect)
             if player_options_tuple[1] == "fields chosen by formulas":
                 minmax_fields_selection_text = pygame.font.Font(DEFAULT_FONT, 13).render(
                     f"{player_options_tuple[1]} = {player_options_tuple[3]}", True, SHIP_COVE_COLOR)
@@ -461,7 +521,7 @@ class Game:
                 minmax_fields_selection_text = pygame.font.Font(DEFAULT_FONT, 13).render(
                     f"{player_options_tuple[1]}", True, SHIP_COVE_COLOR)
             minmax_fields_selection_rect = minmax_fields_selection_text.get_rect(left=sign_rect.left + 5,
-                                                                                 top=player_rect.bottom + 5)
+                                                                                 top=increment_time_rect.bottom + 5)
             self._screen.blit(minmax_fields_selection_text, minmax_fields_selection_rect)
             evaluation_function_text = pygame.font.Font(DEFAULT_FONT, 13).render(
                 f"evaluation function = {player_options_tuple[2]}", True, SHIP_COVE_COLOR)
@@ -473,6 +533,12 @@ class Game:
             minmax_depth_rect = evaluation_function_text.get_rect(left=sign_rect.left + 5,
                                                                   top=evaluation_function_rect.bottom + 5)
             self._screen.blit(minmax_depth_text, minmax_depth_rect)
+            if player_options_tuple[1] == "fields chosen by formulas":
+                formula_selection_text = pygame.font.Font(DEFAULT_FONT, 13).render(
+                    f"formula selection = {player_options_tuple[5]}", True, SHIP_COVE_COLOR)
+                formula_selection_rect = formula_selection_text.get_rect(left=sign_rect.left + 5,
+                                                                         top=minmax_depth_rect.bottom + 5)
+                self._screen.blit(formula_selection_text, formula_selection_rect)
 
     def _draw_information_message(self):
         text = pygame.font.Font(DEFAULT_FONT, 20).render(self._information_message, True,
@@ -486,10 +552,18 @@ class Game:
         self._first_player = first_player_options_tuple
         self._second_player = second_player_options_tuple
         self._current_player = self._first_player
+        self._first_player_round_time_limit = first_player_options_tuple[6]
+        self._second_player_round_time_limit = second_player_options_tuple[6]
+        self._first_player_round_time = first_player_options_tuple[6]
+        self._second_player_round_time = second_player_options_tuple[6]
+        self._first_player_increment_time = first_player_options_tuple[7]
+        self._second_player_increment_time = second_player_options_tuple[7]
         self._information_message = "Game in progress•••"
         self._moving_thread_running = False
         self._game_ended = False
         self._current_thread_uuid = None
+        self._timer = pygame.USEREVENT + 1
+        pygame.time.set_timer(self._timer, 1000)
 
     def _check_if_player_won(self):
         bonus = 0 if self._first_player == self._current_player else 1
@@ -549,11 +623,12 @@ class Game:
         self._moving_thread_running = True
         computer_position_in_game_state = 0 if self._first_player == self._current_player else 1
         field_index = self._ai.get_best_move(self._game_state, computer_position_in_game_state, self._current_player)
-        if self._current_thread_uuid == thread_uuid:
+        if self._current_thread_uuid == thread_uuid and not self._game_ended:
             game_state_index = (field_index - 1) * 2
             if self._first_player != self._current_player:
                 game_state_index += 1
             self._game_state[game_state_index] = 1
+            self._update_player_time()
             self._board.update_fields(self._game_state, field_index)
             self._game_ended, line_fields = self._check_if_player_won()
             if self._game_ended:
@@ -578,6 +653,7 @@ class Game:
         if self._first_player != self._current_player:
             game_state_index += 1
         self._game_state[game_state_index] = 1
+        self._update_player_time()
         self._board.update_fields(self._game_state, field_index)
         self._game_ended, line_fields = self._check_if_player_won()
         if self._game_ended:
@@ -601,6 +677,42 @@ class Game:
             if not self._moving_thread_running and self._current_player[0][1] == "computer":
                 self._computer_move_thr()
 
+    def _handle_timer(self, events):
+        first_player_timer_color = SHIP_COVE_COLOR if self._first_player_round_time > 0 else MEDIUM_CARMINE_COLOR
+        first_player_timer_text = pygame.font.Font(DEFAULT_FONT, 15).render(
+            f"{(self._first_player_round_time // 3600):02} : {((self._first_player_round_time % 3600) // 60):02} : "
+            f"{(self._first_player_round_time % 60):02}", True, first_player_timer_color)
+        first_player_timer_rect = first_player_timer_text.get_rect(left=130, centery=540)
+        self._screen.blit(first_player_timer_text, first_player_timer_rect)
+        second_player_timer_color = SHIP_COVE_COLOR if self._second_player_round_time > 0 else MEDIUM_CARMINE_COLOR
+        second_player_timer_text = pygame.font.Font(DEFAULT_FONT, 15).render(
+            f"{(self._second_player_round_time // 3600):02} : {((self._second_player_round_time % 3600) // 60):02} : "
+            f"{(self._second_player_round_time % 60):02}", True, second_player_timer_color)
+        second_player_timer_rect = second_player_timer_text.get_rect(left=(SCREEN_WIDTH // 2) + 120, centery=540)
+        self._screen.blit(second_player_timer_text, second_player_timer_rect)
+        for event in events:
+            if event.type == self._timer:
+                if self._current_player == self._first_player and not self._game_ended:
+                    if self._first_player_round_time > 0:
+                        self._first_player_round_time -= 1
+                        if self._first_player_round_time == 0:
+                            pygame.time.set_timer(self._timer, 0)
+                            self._game_ended = True
+                            self._information_message = "Second player won!"
+                elif self._current_player == self._second_player and not self._game_ended:
+                    if self._second_player_round_time > 0:
+                        self._second_player_round_time -= 1
+                        if self._second_player_round_time == 0:
+                            pygame.time.set_timer(self._timer, 0)
+                            self._game_ended = True
+                            self._information_message = "First player won!"
+
+    def _update_player_time(self):
+        if self._current_player == self._first_player:
+            self._first_player_round_time += self._first_player_increment_time
+        else:
+            self._second_player_round_time += self._second_player_increment_time
+
     def _main_menu(self):
         while True:
             self._clock.tick(FPS)
@@ -615,9 +727,9 @@ class Game:
             self._screen.blit(title_icon, title_icon_rect)
             self._first_player_options.handle(self._screen, events)
             self._second_player_options.handle(self._screen, events)
-            play_button = Button(90, 571, 140, 50, "Play", 35)
-            about_button = Button(SCREEN_WIDTH // 2, 571, 140, 50, "About", 35)
-            exit_button = Button(410, 571, 140, 50, "Exit", 35)
+            play_button = Button(90, 645, 140, 50, "Play", 35)
+            about_button = Button(SCREEN_WIDTH // 2, 645, 140, 50, "About", 35)
+            exit_button = Button(410, 645, 140, 50, "Exit", 35)
             for button in [play_button, exit_button, about_button]:
                 button.change_color(mouse_coord[0], mouse_coord[1])
                 button.update(self._screen)
@@ -645,10 +757,10 @@ class Game:
             self._clock.tick(FPS)
             self._screen.fill(BLUE_WHALE_COLOR)
             title_text = pygame.font.Font(DEFAULT_FONT, 60).render("Gomoku", True, WHITE_SMOKE_COLOR)
-            title_rect = title_text.get_rect(center=((SCREEN_WIDTH // 2) - 17, 80))
+            title_rect = title_text.get_rect(center=((SCREEN_WIDTH // 2) - 17, 120))
             self._screen.blit(title_text, title_rect)
             title_icon = pygame.transform.scale(ICON, (70, 70))
-            title_icon_rect = title_icon.get_rect(center=((SCREEN_WIDTH // 2) + 110, 58))
+            title_icon_rect = title_icon.get_rect(center=((SCREEN_WIDTH // 2) + 110, 98))
             self._screen.blit(title_icon, title_icon_rect)
             content_lines = ["Gomoku is a two-player strategy game that involves",
                              "placing pawns on a board. The object of the game is to",
@@ -661,11 +773,11 @@ class Game:
                              "the program is codeman38."]
             for index, line in enumerate(content_lines):
                 line_text = pygame.font.Font(DEFAULT_FONT, 13).render(line, True, SHIP_COVE_COLOR)
-                line_rect = line_text.get_rect(topleft=(40, 170 + (20 * index)))
+                line_rect = line_text.get_rect(topleft=(40, 240 + (20 * index)))
                 self._screen.blit(line_text, line_rect)
             mouse_coord = pygame.mouse.get_pos()
             events = pygame.event.get()
-            menu_button = Button(SCREEN_WIDTH // 2, 571, 140, 50, "Menu", 35)
+            menu_button = Button(SCREEN_WIDTH // 2, 645, 140, 50, "Menu", 35)
             for button in [menu_button]:
                 button.change_color(mouse_coord[0], mouse_coord[1])
                 button.update(self._screen)
@@ -696,7 +808,7 @@ class Game:
                 title_icon_rect = title_icon.get_rect(center=((SCREEN_WIDTH // 2) + 110, 178))
                 self._screen.blit(title_icon, title_icon_rect)
                 loading_text = pygame.font.Font(DEFAULT_FONT, 20).render(loading_message, True, SHIP_COVE_COLOR)
-                loading_rect = loading_text.get_rect(left=150, centery=450)
+                loading_rect = loading_text.get_rect(left=150, centery=500)
                 self._screen.blit(loading_text, loading_rect)
                 current_time = pygame.time.get_ticks()
                 if current_time - last_loading_message_update >= loading_message_update_interval:
@@ -739,8 +851,8 @@ class Game:
                     if menu_button.check_for_input(mouse_coord[0], mouse_coord[1]):
                         self._main_menu()
                     if restart_button.check_for_input(mouse_coord[0], mouse_coord[1]):
-                        if not all(value == 0 for value in self._game_state):
-                            self._initialize_new_game(first_player_options_tuple, second_player_options_tuple)
+                        self._initialize_new_game(first_player_options_tuple, second_player_options_tuple)
+            self._handle_timer(events)
             self._draw_player_information(first_player_options_tuple, "X", MEDIUM_CARMINE_COLOR, 30, 540)
             self._draw_player_information(second_player_options_tuple, "O", SALEM_COLOR, (SCREEN_WIDTH // 2) + 20, 540)
             pygame.display.update()
