@@ -51,6 +51,8 @@ def main():
     CsvFieldShifter.shift(64, 80)
     CsvFieldShifter.shift(109, 95)
     CsvFieldShifter.shift(110, 96)
+    CsvFieldShifter.shift(63, 79)
+    CsvFieldShifter.shift(108, 94)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,1 @@
+Precision for field 111 [83, 115, 143] is 80.81%

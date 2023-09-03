@@ -25,9 +25,8 @@ class MainGenerator:
             all_ones.append(row) if row[-1] == 1 else all_zeros.append(row)
         ones = all_ones[len(all_ones) // 2:]
         zeros = all_zeros[len(all_zeros) // 2:]
-        train_data = ones + zeros
         test_data = all_ones[:len(all_ones) // 2] + all_zeros[:len(all_zeros) // 2]
-        return train_data, ones, zeros, test_data
+        return ones, zeros, test_data
 
     def _create_clause_fields_around(self, target_field):
         depth_level = 1
@@ -344,7 +343,7 @@ class MainGenerator:
             for classifier in classifiers:
                 symmetry_field = self._perform_symmetry_on_field(symmetry_field, classifier)
                 if symmetry_field == field:
-                    symmetry_fields.append(symmetry_field)
+                    symmetry_fields.append(field_index)
         with open(Path(output_path).joinpath(f"{field}_results.txt"), "w") as result_file:
             result_file.write(f"Precision for field {field} {str(symmetry_fields)} is {precision}%")
 
@@ -356,11 +355,11 @@ class MainGenerator:
 
     def generate_main_formulas(self, field, ones_conf, zeros_conf, num_formulas):
         data = self._get_data(BASE_DIR.joinpath(f"csv/main/{field}.csv"))
-        train_data, ones, zeros, test_data = self._divide_data(data)
+        ones, zeros, test_data = self._divide_data(data)
         one_formulas = []
         self._print_main_formulas_results(1, field, len(one_formulas), num_formulas)
         while len(one_formulas) < num_formulas:
-            formula = self._create_main_formula(train_data, ones_conf[2], field, ones_conf[1], ones_conf[0])
+            formula = self._create_main_formula(ones, ones_conf[2], field, ones_conf[1], ones_conf[0])
             s1, n1 = self._check_formula(formula, ones)
             s0, n0 = self._check_formula(formula, zeros)
             if (s1 + n0) > 2 * (s0 + n1) and s1 > 1.5 * n1:
@@ -370,7 +369,7 @@ class MainGenerator:
         zero_formulas = []
         self._print_main_formulas_results(0, field, len(zero_formulas), num_formulas)
         while len(zero_formulas) < num_formulas:
-            formula = self._create_main_formula(train_data, zeros_conf[2], field, zeros_conf[1], zeros_conf[0])
+            formula = self._create_main_formula(zeros, zeros_conf[2], field, zeros_conf[1], zeros_conf[0])
             s0, n0 = self._check_formula(formula, zeros)
             s1, n1 = self._check_formula(formula, ones)
             if (s0 + n1) > 2 * (s1 + n0) and n1 >= 0.7 * s1:
@@ -421,11 +420,11 @@ class MainGenerator:
 
     def generate_evaluation_formulas(self, ones_conf, zeros_conf, num_formulas):
         data = self._get_data(BASE_DIR.joinpath("csv/evaluation/evaluation.csv"))
-        train_data, ones, zeros, test_data = self._divide_data(data)
+        ones, zeros, test_data = self._divide_data(data)
         one_formulas = []
         self._print_evaluation_formulas_results(len(one_formulas), num_formulas, 1)
         while len(one_formulas) < num_formulas:
-            formula = self._create_evaluation_formula(train_data, ones_conf[2], ones_conf[1], ones_conf[0])
+            formula = self._create_evaluation_formula(ones, ones_conf[2], ones_conf[1], ones_conf[0])
             s1, n1 = self._check_formula(formula, ones)
             s0, n0 = self._check_formula(formula, zeros)
             if (s1 + n0) > 2 * (s0 + n1) and s1 > 1.5 * n1:
@@ -435,7 +434,7 @@ class MainGenerator:
         zero_formulas = []
         self._print_evaluation_formulas_results(len(zero_formulas), num_formulas, 0)
         while len(zero_formulas) < num_formulas:
-            formula = self._create_evaluation_formula(train_data, zeros_conf[2], zeros_conf[1], zeros_conf[0])
+            formula = self._create_evaluation_formula(zeros, zeros_conf[2], zeros_conf[1], zeros_conf[0])
             s0, n0 = self._check_formula(formula, zeros)
             s1, n1 = self._check_formula(formula, ones)
             if (s0 + n1) > 2 * (s1 + n0) and s0 > 1.5 * n0:
@@ -872,23 +871,22 @@ def main():
     ag = AdditionalGenerator()
     ag.generate()
     mg = MainGenerator()
-    mg.generate_evaluation_formulas([3, 25, [1, 2, 3]], [3, 45, [1, 2]], 100)
     fields = [1, 17, 32, 33, 47, 48, 49, 61, 62, 63, 64, 65, 76, 77, 78, 79, 80, 91, 92, 93, 94, 97, 106, 107, 108, 109,
               110, 112]
     for field in fields:
         mg.generate_main_formulas(field, [3, 25, [0, 3, 4]], [3, 25, [1, 2]], 100)
-    fields = [31, 46]
-    for field in fields:
-        mg.generate_main_formulas(field, [4, 25, [0, 3, 4]], [3, 25, [1, 2]], 100)
     fields = [16]
     for field in fields:
         mg.generate_main_formulas(field, [4, 20, [0, 3, 4]], [3, 25, [1, 2]], 100)
-    fields = [113]
+    fields = [31, 46]
     for field in fields:
-        mg.generate_main_formulas(field, [3, 45, [0, 3, 4]], [3, 25, [1, 2]], 100)
+        mg.generate_main_formulas(field, [4, 25, [0, 3, 4]], [3, 25, [1, 2]], 100)
     fields = [81, 95, 96, 111]
     for field in fields:
         mg.generate_main_formulas(field, [3, 70, [1, 2, 3, 4]], [3, 25, [1, 2]], 100)
+    fields = [113]
+    for field in fields:
+        mg.generate_main_formulas(field, [3, 45, [0, 3, 4]], [3, 25, [1, 2]], 100)
     mg.generate_rest_main_formulas(0)
     mg.generate_rest_main_formulas(1)
 
