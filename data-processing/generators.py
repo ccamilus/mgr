@@ -166,7 +166,7 @@ class MainGenerator:
 
     def _create_main_formula(self, data, clause_types, target_field, num_clauses, num_literals):
         tmp_number_of_clauses = num_clauses
-        tmp_clause_types = clause_types
+        tmp_clause_types = copy.deepcopy(clause_types)
         formula = []
         if 0 in clause_types:
             formula.append(self._create_clause_fields_around(target_field))
