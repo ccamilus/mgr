@@ -871,6 +871,7 @@ def main():
     ag = AdditionalGenerator()
     ag.generate()
     mg = MainGenerator()
+    mg.generate_evaluation_formulas([3, 25, [1, 2, 3]], [3, 25, [1, 2, 3]], 100)
     fields = [1, 17, 32, 33, 47, 48, 49, 61, 62, 63, 64, 65, 76, 77, 78, 79, 80, 91, 92, 93, 94, 97, 106, 107, 108, 109,
               110, 112]
     for field in fields:
