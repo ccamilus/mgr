@@ -11,7 +11,7 @@ from ai import AI
 
 SCREEN_WIDTH = 500
 SCREEN_HEIGHT = 690
-FPS = 60
+FPS = 30
 
 BLUE_WHALE_COLOR = (30, 47, 74)
 BLUE_WHALE_DARK_COLOR = (23, 35, 54)
@@ -459,7 +459,7 @@ class Game:
         pygame.display.set_icon(ICON)
         self._clock = pygame.time.Clock()
         self._board_size = board_size
-        self._screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self._screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), flags=pygame.SCALED, vsync=1)
         self._first_player_options = PlayerOptions(0, 20, 150)
         self._second_player_options = PlayerOptions(1, 20, 391)
         self._ai = None
